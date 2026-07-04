@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-    const subscription = event.data.object as Stripe.Subscription;
+    const subscription = event.data.object as Stripe.Subscription & { current_period_end?: number; trial_end?: number | null };
     const userId = subscription.metadata.user_id;
     const plan = subscription.metadata.plan;
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
         stripe_customer_id: String(subscription.customer),
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
         trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
       }, { onConflict: "user_id" });
     }
