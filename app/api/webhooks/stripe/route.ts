@@ -1,22 +1,32 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminSupabase } from "../../../../lib/supabase";
 import { getStripe } from "../../../../lib/stripe";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
   if (!secret) return NextResponse.json({ error: "Webhook secret missing" }, { status: 500 });
 
   const body = await request.text();
-  const signature = (await headers()).get("stripe-signature");
+  const signature = request.headers.get("stripe-signature");
   if (!signature) return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
 
   let event: Stripe.Event;
   try {
     event = getStripe().webhooks.constructEvent(body, signature, secret);
   } catch (error) {
-    return NextResponse.json({ error: `Webhook signature failed: ${error}` }, { status: 400 });
+    return NextResponse.json({
+      error: `Webhook signature failed: ${error}`,
+      debug: {
+        bodyLength: body.length,
+        hasSignature: Boolean(signature),
+        secretPrefix: secret.slice(0, 6),
+        secretLength: secret.length
+      }
+    }, { status: 400 });
   }
 
   const supabase = createAdminSupabase();
