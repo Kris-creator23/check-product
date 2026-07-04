@@ -1,0 +1,631 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f4ed;
+  --surface: #ffffff;
+  --ink: #1f2a2e;
+  --muted: #667275;
+  --line: #d9ddd7;
+  --green: #1f7a5a;
+  --green-dark: #14523d;
+  --coral: #e4674f;
+  --gold: #d9a441;
+  --blue: #476f8f;
+  --soft: #eef4f1;
+  --warm: #fff7e7;
+  --shadow: 0 24px 70px rgba(31, 42, 46, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px clamp(18px, 4vw, 56px);
+  border-bottom: 1px solid rgba(31, 42, 46, 0.08);
+  background: rgba(247, 244, 237, 0.92);
+  backdrop-filter: blur(16px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+}
+
+.brand span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+}
+
+nav,
+.actions,
+.footer div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+nav {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+nav a:hover,
+.footer a:hover {
+  color: var(--ink);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(340px, 0.98fr);
+  gap: clamp(34px, 6vw, 80px);
+  min-height: calc(100vh - 78px);
+  align-items: center;
+  padding: clamp(42px, 7vw, 92px) clamp(18px, 4vw, 56px) 46px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 820px;
+  margin-bottom: 20px;
+  font-size: clamp(42px, 7vw, 82px);
+  line-height: 0.98;
+}
+
+h2 {
+  margin-bottom: 18px;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.05;
+}
+
+h3 {
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.heroText {
+  max-width: 670px;
+  color: #405055;
+  font-size: 19px;
+}
+
+.actions {
+  flex-wrap: wrap;
+  margin: 30px 0;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 20px;
+  cursor: pointer;
+  font-weight: 780;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.button.primary {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(31, 122, 90, 0.22);
+}
+
+.button.primary:hover {
+  background: var(--green-dark);
+}
+
+.button.secondary {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.button.full {
+  width: 100%;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 620px;
+}
+
+.stats div {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.stats strong {
+  display: block;
+  font-size: 24px;
+}
+
+.stats span,
+.plan p,
+.featureList span,
+.signupBox label,
+.accountGrid span {
+  color: var(--muted);
+}
+
+.window {
+  overflow: hidden;
+  border: 1px solid rgba(31, 42, 46, 0.12);
+  border-radius: 8px;
+  background: #f9faf8;
+  box-shadow: var(--shadow);
+}
+
+.windowBar {
+  display: flex;
+  gap: 8px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.windowBar span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.windowBar span:nth-child(1) {
+  background: var(--coral);
+}
+
+.windowBar span:nth-child(2) {
+  background: var(--gold);
+}
+
+.windowBar span:nth-child(3) {
+  background: #64b37c;
+}
+
+.appPanel {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 3vw, 30px);
+}
+
+.status,
+.folder,
+.receipt,
+.plan,
+.signupBox,
+.featureList div,
+.accountCard,
+.faq details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.status,
+.folder,
+.receipt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+}
+
+.status.ok {
+  border-color: rgba(31, 122, 90, 0.28);
+  background: #eef8f2;
+}
+
+.status > span {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 6px rgba(31, 122, 90, 0.12);
+}
+
+.status p,
+.folder p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.folder i {
+  position: relative;
+  width: 42px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  background: var(--blue);
+}
+
+.folder i::before {
+  position: absolute;
+  top: -7px;
+  left: 4px;
+  width: 18px;
+  height: 9px;
+  border-radius: 4px 4px 0 0;
+  background: var(--blue);
+  content: "";
+}
+
+.queue {
+  display: grid;
+  gap: 10px;
+}
+
+.queueHead,
+.receipt {
+  display: flex;
+  justify-content: space-between;
+}
+
+.queueHead {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.receipt b {
+  color: var(--green);
+  font-size: 13px;
+}
+
+.receipt.active b {
+  color: var(--blue);
+}
+
+.receipt.muted b {
+  color: var(--muted);
+}
+
+.darkButton {
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 760;
+}
+
+.section {
+  padding: clamp(58px, 8vw, 108px) clamp(18px, 4vw, 56px);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(280px, 0.75fr);
+  gap: clamp(28px, 6vw, 80px);
+  align-items: start;
+  border-top: 1px solid rgba(31, 42, 46, 0.08);
+}
+
+.split > p,
+.split > div > p {
+  color: #405055;
+  font-size: 18px;
+}
+
+.warm {
+  background: var(--warm);
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+.plan.featured {
+  border-color: rgba(31, 122, 90, 0.5);
+  box-shadow: 0 18px 48px rgba(31, 42, 46, 0.12);
+}
+
+.badge {
+  align-self: flex-start;
+  border-radius: 999px;
+  background: #eef8f2;
+  color: var(--green);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.price strong {
+  font-size: 42px;
+}
+
+.price span {
+  color: var(--muted);
+}
+
+.plan ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  color: #405055;
+}
+
+.plan .button {
+  margin-top: auto;
+}
+
+.signupBox,
+.invoiceBox {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.invoiceBox {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.invoiceBox h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.invoiceBox p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+input,
+select {
+  min-height: 46px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tabs button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tabs .selected {
+  border-color: var(--green);
+  background: #eef8f2;
+  color: var(--green);
+}
+
+.message {
+  margin: 0;
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.featureList {
+  display: grid;
+  gap: 12px;
+}
+
+.featureList div {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+}
+
+.faq {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.faq details {
+  margin-top: 12px;
+  padding: 18px 20px;
+}
+
+.faq summary {
+  cursor: pointer;
+  font-weight: 780;
+}
+
+.faq p {
+  margin: 12px 0 0;
+  color: var(--muted);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px clamp(18px, 4vw, 56px);
+  border-top: 1px solid rgba(31, 42, 46, 0.08);
+  color: var(--muted);
+}
+
+.accountPage {
+  min-height: 100vh;
+  padding: clamp(26px, 5vw, 56px);
+}
+
+.accountCard {
+  display: grid;
+  gap: 22px;
+  max-width: 980px;
+  margin: clamp(40px, 7vw, 90px) auto 0;
+  padding: clamp(24px, 5vw, 48px);
+  box-shadow: var(--shadow);
+}
+
+.accountGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.accountGrid div {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.legalPage {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: clamp(34px, 6vw, 82px) clamp(18px, 4vw, 32px);
+}
+
+.legalPage .brand {
+  margin-bottom: 50px;
+}
+
+.legalPage h1 {
+  font-size: clamp(38px, 6vw, 66px);
+}
+
+.legalPage h2 {
+  margin-top: 36px;
+  font-size: 25px;
+}
+
+.legalPage p {
+  color: #405055;
+}
+
+@media (max-width: 1020px) {
+  nav {
+    display: none;
+  }
+}
+
+@media (max-width: 920px) {
+  .hero,
+  .split,
+  .pricingGrid,
+  .accountGrid,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  h1 {
+    font-size: 40px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .actions .button,
+  .button.full {
+    width: 100%;
+  }
+
+  .receipt,
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
