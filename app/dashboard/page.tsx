@@ -36,6 +36,14 @@ export default function DashboardPage() {
 
   async function loadProfile() {
     setLoading(true);
+
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      await supabase.auth.exchangeCodeForSession(code);
+      window.history.replaceState({}, "", "/dashboard");
+    }
+
     const sessionToken = await token();
     if (!sessionToken) {
       setMessage("Kirjaudu ensin sisään etusivulla.");
