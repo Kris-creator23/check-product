@@ -1,27 +1,29 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabase } from "../../../lib/supabase";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     async function finishLogin() {
       const supabase = createBrowserSupabase();
-      const code = searchParams.get("code");
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
 
       if (code) {
         await supabase.auth.exchangeCodeForSession(code);
+      } else {
+        await supabase.auth.getSession();
       }
 
       router.replace("/dashboard");
     }
 
     void finishLogin();
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <main className="accountPage">
