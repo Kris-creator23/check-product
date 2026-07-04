@@ -5,7 +5,7 @@ import { createAdminSupabase } from "../../../../lib/supabase";
 import { getStripe } from "../../../../lib/stripe";
 
 export async function POST(request: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
   if (!secret) return NextResponse.json({ error: "Webhook secret missing" }, { status: 500 });
 
   const body = await request.text();
