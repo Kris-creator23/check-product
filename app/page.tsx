@@ -20,7 +20,7 @@ export default function HomePage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/dashboard?plan=${plan}`
+        redirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
       }
     });
     setBusy(false);
@@ -35,7 +35,7 @@ export default function HomePage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard?plan=${plan}`
+          emailRedirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
         }
       });
       setMessage(error ? error.message : "Tarkista sähköpostisi. Lähetimme kirjautumislinkin.");
@@ -44,7 +44,7 @@ export default function HomePage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard?plan=${plan}`
+          emailRedirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
         }
       });
       setMessage(error ? error.message : "Tili luotu. Tarkista sähköposti, jos vahvistus vaaditaan.");
