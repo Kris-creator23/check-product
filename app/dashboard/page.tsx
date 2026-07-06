@@ -131,7 +131,7 @@ export default function DashboardPage() {
             <label>
               Valitse paketti
               <select value={plan} onChange={(event) => setPlan(event.target.value as PlanId)}>
-                {Object.values(plans).map((item) => <option value={item.id} key={item.id}>{item.name} - {item.price}/kk</option>)}
+                {Object.values(plans).map((item) => <option value={item.id} key={item.id}>{item.name} - {item.price}/kk + ALV</option>)}
               </select>
             </label>
             <div className="actions">

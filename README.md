@@ -69,6 +69,8 @@ npm run dev
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
 5. Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET`.
+6. Enable Stripe Tax and add your Finnish VAT registration in Stripe Tax registrations.
+7. Use tax-exclusive recurring prices so Checkout can add VAT on top of the displayed plan price.
 
 ## Mac app integration
 

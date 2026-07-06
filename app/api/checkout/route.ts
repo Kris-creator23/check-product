@@ -45,7 +45,14 @@ export async function POST(request: Request) {
     line_items: [{ price, quantity: 1 }],
     success_url: `${siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl}/cancel`,
+    automatic_tax: { enabled: true },
+    billing_address_collection: "required",
+    customer_update: {
+      address: "auto",
+      name: "auto"
+    },
     payment_method_collection: "always",
+    tax_id_collection: { enabled: true },
     subscription_data: {
       trial_period_days: 7,
       metadata: {

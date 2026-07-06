@@ -113,7 +113,7 @@ export default function HomePage() {
                 {item.id === "pro" && <span className="badge">Suosituin</span>}
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
-                <div className="price"><strong>{item.price}</strong><span>/ kk</span></div>
+                <div className="price"><strong>{item.price}</strong><span>/ kk + ALV</span></div>
                 <ul>
                   <li>Enintään {item.quota} kuittia kuukaudessa</li>
                   <li>7 päivän maksuton kokeilu</li>
@@ -139,7 +139,7 @@ export default function HomePage() {
             <label>
               Paketti
               <select value={plan} onChange={(event) => setPlan(event.target.value as PlanId)}>
-                {Object.values(plans).map((item) => <option value={item.id} key={item.id}>{item.name} - {item.price}/kk</option>)}
+                {Object.values(plans).map((item) => <option value={item.id} key={item.id}>{item.name} - {item.price}/kk + ALV</option>)}
               </select>
             </label>
             <div className="tabs">
