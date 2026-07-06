@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   const { data, error } = await getAuthClient().auth.verifyOtp({
     email,
     token,
-    type: "magiclink"
+    type: "email"
   });
 
   if (error || !data.session) {

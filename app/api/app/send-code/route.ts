@@ -25,6 +25,11 @@ export async function POST(request: Request) {
     options: { shouldCreateUser: false }
   });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    return NextResponse.json({
+      error: "Sähköpostilla ei löytynyt aktiivista CheckApp-tiliä. Rekisteröidy tai aloita kokeilu ensin osoitteessa https://checkapp.fi."
+    }, { status: 400 });
+  }
+
   return NextResponse.json({ ok: true });
 }
