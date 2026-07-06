@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BrandLogo } from "./components/BrandLogo";
 import { createBrowserSupabase } from "../lib/supabase";
 import { plans, type PlanId } from "../lib/plans";
 
@@ -191,7 +192,7 @@ export default function HomePage() {
 function Header() {
   return (
     <header className="siteHeader">
-      <a className="brand" href="#"><span>C</span>Check</a>
+      <BrandLogo href="#" />
       <nav>
         <a href="#pricing">Hinnat</a>
         <a href="#signup">Rekisteröinti</a>

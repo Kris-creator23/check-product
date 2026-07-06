@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { BrandLogo } from "../components/BrandLogo";
 import { createBrowserSupabase } from "../../lib/supabase";
 import { plans, type PlanId } from "../../lib/plans";
 
@@ -115,7 +116,7 @@ export default function DashboardPage() {
 
   return (
     <main className="accountPage">
-      <a className="brand" href="/"><span>C</span>Check</a>
+      <BrandLogo />
       <section className="accountCard">
         <p className="eyebrow">Oma tili</p>
         <h1>Hallinnoi kokeilua ja tilausta</h1>

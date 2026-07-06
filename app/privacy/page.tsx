@@ -1,7 +1,9 @@
+import { BrandLogo } from "../components/BrandLogo";
+
 export default function PrivacyPage() {
   return (
     <main className="legalPage">
-      <a className="brand" href="/"><span>C</span>Check</a>
+      <BrandLogo />
       <p className="eyebrow">Tietosuojaseloste</p>
       <h1>Checkin tietosuojaseloste</h1>
       <p>Viimeksi päivitetty: 4. heinäkuuta 2026</p>

@@ -1,7 +1,9 @@
+import { BrandLogo } from "../components/BrandLogo";
+
 export default function TermsPage() {
   return (
     <main className="legalPage">
-      <a className="brand" href="/"><span>C</span>Check</a>
+      <BrandLogo />
       <p className="eyebrow">Käyttöehdot</p>
       <h1>Checkin käyttöehdot</h1>
       <p>Viimeksi päivitetty: 4. heinäkuuta 2026</p>

@@ -59,18 +59,14 @@ select {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 800;
+  flex: 0 0 auto;
 }
 
-.brand span {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--ink);
-  color: #fff;
+.brandLogo {
+  display: block;
+  width: clamp(138px, 16vw, 190px);
+  height: auto;
+  border-radius: 4px;
 }
 
 nav,
