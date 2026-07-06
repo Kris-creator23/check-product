@@ -118,13 +118,13 @@ function getOutputText(data: Record<string, any>) {
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return safeError("service temporarily unavailable", 503);
+  if (!apiKey) return safeError("OpenAI API key is missing in production", 503);
 
   const auth = await requireUser(request);
   if ("error" in auth) return safeError("authentication required", 401);
 
   if (!checkRateLimit(auth.user.id)) {
-    return safeError("service temporarily unavailable", 429);
+    return safeError("recognition rate limit reached, try again in a minute", 429);
   }
 
   const { data: profile, error: profileError } = await auth.supabase
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
-  if (profileError) return safeError("service temporarily unavailable", 503);
+  if (profileError) return safeError("subscription lookup failed", 503);
   if (!profile) return safeError("subscription inactive", 403);
 
   const selectedPlan = profile.selected_plan as PlanId | null;
@@ -216,8 +216,12 @@ Do not include explanations.
         }
       })
     });
-  } catch {
-    return safeError("service temporarily unavailable", 503);
+  } catch (error) {
+    const errorName = error instanceof Error ? error.name : "";
+    if (errorName === "TimeoutError" || errorName === "AbortError") {
+      return safeError("OpenAI request timed out", 503);
+    }
+    return safeError("OpenAI request failed", 503);
   }
 
   if (!openaiResponse.ok) {
