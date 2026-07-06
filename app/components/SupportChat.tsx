@@ -9,10 +9,11 @@ type ChatMessage = {
 
 const welcomeMessage: ChatMessage = {
   role: "assistant",
-  content: "Hei! Olen ChecKAppin asiakaspalvelu. Miten voin auttaa?"
+  content: "Hei! Olen CheckAppin asiakaspalvelu. Miten voin auttaa?"
 };
 
 const customGptUrl = "https://chatgpt.com/g/g-6a4b5f56ca508191a7627398a5d79fbc-asiakaspalvelu";
+const blockedSecretPattern = /(salasana|password|2fa|kaksivaihe|authenticator|kortti|card|cvv|cvc|\b\d{13,19}\b)/i;
 
 export function SupportChat() {
   const [open, setOpen] = useState(false);
@@ -23,6 +24,18 @@ export function SupportChat() {
   async function sendMessage() {
     const text = input.trim();
     if (!text || busy) return;
+
+    if (blockedSecretPattern.test(text)) {
+      setMessages([
+        ...messages,
+        {
+          role: "assistant",
+          content: "Älä lähetä salasanoja, 2FA-koodeja, maksukorttitietoja tai muita salaisuuksia chatissa."
+        }
+      ]);
+      setInput("");
+      return;
+    }
 
     const nextMessages = [...messages, { role: "user" as const, content: text }];
     setMessages(nextMessages);
@@ -56,11 +69,11 @@ export function SupportChat() {
   return (
     <div className={`supportChat ${open ? "open" : ""}`}>
       {open && (
-        <section className="supportPanel" aria-label="ChecKApp asiakaspalvelu">
+        <section className="supportPanel" aria-label="CheckApp asiakaspalvelu">
           <div className="supportHeader">
             <div>
               <b>Asiakaspalvelu</b>
-              <span>ChecKApp-tuki</span>
+              <span>CheckApp-tuki</span>
             </div>
             <div className="supportHeaderActions">
               <a href={customGptUrl} target="_blank" rel="noreferrer">Avaa asiakaspalvelu</a>
@@ -75,6 +88,9 @@ export function SupportChat() {
             ))}
             {busy && <p className="supportBubble assistant">Kirjoitetaan...</p>}
           </div>
+          <p className="supportNotice">
+            Älä lähetä Fennoa-salasanoja, 2FA-koodeja, maksukorttitietoja tai tarpeettomia kuittikuvia. Chat-viestejä voidaan käsitellä asiakaspalvelun tuottamiseksi.
+          </p>
           <form
             className="supportForm"
             onSubmit={(event) => {

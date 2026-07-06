@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
+import { siteContent } from "../../../lib/siteContent";
 
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
 };
 
+const blockedSecretPattern = /(salasana|password|2fa|kaksivaihe|authenticator|kortti|card|cvv|cvc|\b\d{13,19}\b)/i;
+const cardLikePattern = /\b\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d[ -]*\d(?:[ -]*\d){0,6}\b/g;
+const credentialPattern = /(salasana|password|2fa|cvv|cvc)\s*[:=]\s*\S+/gi;
+
 const systemPrompt = `
-Olet ChecKAppin ystävällinen asiakaspalvelu sivustolla.
+Olet CheckAppin ystävällinen asiakaspalvelu sivustolla.
 Vastaa lyhyesti ja käytännöllisesti sillä kielellä, jolla asiakas kirjoittaa.
-ChecKApp on Mac-sovellus Fennoa-käyttäjille. Se auttaa lataamaan kuitteja Fennoaan,
+CheckApp on Mac-sovellus Fennoa-käyttäjille. Se auttaa lataamaan kuitteja Fennoaan,
 aloittaa 7 päivän maksuttomalla kokeilulla ja tarjoaa Basic-, Pro- ja Premium-paketit.
 Sivustolla voi kirjautua Googlella tai sähköpostilla ja salasanalla.
-ChecKApp-sovelluksessa kirjautuminen voi käyttää sähköpostiin lähetettävää koodia.
-Jos et tiedä vastausta varmasti, ohjaa asiakas ottamaan yhteyttä: arthausfi@gmail.com.
+CheckApp-sovelluksessa kirjautuminen voi käyttää sähköpostiin lähetettävää koodia.
+Kuittien tunnistuksessa kuittikuva lähetetään OpenAI API:lle CheckAppin backend-välityspalvelun kautta. CheckAppin backend käsittelee
+tili-, tilaus-, lisenssi- ja käyttömäärätietoja, ei kuitin alkuperäistä tiedostoa.
+Jos et tiedä vastausta varmasti, ohjaa asiakas ottamaan yhteyttä: ${siteContent.supportEmail}.
 Älä pyydä tai käsittele Fennoa-salasanoja, korttitietoja tai muita arkaluonteisia tietoja chatissa.
 `.trim();
 
@@ -20,6 +27,16 @@ function isChatMessage(value: unknown): value is ChatMessage {
   if (!value || typeof value !== "object") return false;
   const item = value as Record<string, unknown>;
   return (item.role === "user" || item.role === "assistant") && typeof item.content === "string";
+}
+
+function sanitizeMessage(message: ChatMessage): ChatMessage {
+  return {
+    ...message,
+    content: message.content
+      .replace(cardLikePattern, "[redacted]")
+      .replace(credentialPattern, "$1: [redacted]")
+      .slice(0, 2000)
+  };
 }
 
 export async function POST(request: Request) {
@@ -40,6 +57,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Kirjoita viesti ensin." }, { status: 400 });
   }
 
+  if (blockedSecretPattern.test(userInput)) {
+    return NextResponse.json({
+      error: "Älä lähetä salasanoja, 2FA-koodeja, maksukorttitietoja tai muita salaisuuksia chatissa."
+    }, { status: 400 });
+  }
+
+  const safeMessages = messages.map(sanitizeMessage);
+
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -48,9 +73,10 @@ export async function POST(request: Request) {
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+      store: false,
       input: [
         { role: "system", content: systemPrompt },
-        ...messages.map((message) => ({ role: message.role, content: message.content }))
+        ...safeMessages.map((message) => ({ role: message.role, content: message.content }))
       ]
     })
   });

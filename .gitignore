@@ -1,1 +1,8 @@
 node_modules
+.DS_Store
+.next
+.pnpm-store
+tsconfig.tsbuildinfo
+.env
+.env.local
+.env.*.local

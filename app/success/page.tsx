@@ -3,9 +3,9 @@ export default function SuccessPage() {
     <main className="accountPage">
       <section className="accountCard">
         <p className="eyebrow">Maksutapa lisätty</p>
-        <h1>Check on valmis käyttöön</h1>
-        <p>Ensimmäiset 7 päivää ovat maksuttomat. Voit ladata Mac-sovelluksen ja jatkaa käyttöönottoa.</p>
-        <a className="button primary" href="/api/download">Lataa Check Macille</a>
+        <h1>CheckApp on valmis käyttöön</h1>
+        <p>Ensimmäiset 7 päivää ovat maksuttomat. Sen jälkeen tilaus jatkuu maksullisena valitulla paketilla, ellei sitä peruta ennen kokeilun päättymistä Stripe Customer Portalissa.</p>
+        <a className="button primary" href="/api/download">Lataa CheckApp Macille</a>
         <a className="button secondary" href="/dashboard">Oma tili</a>
       </section>
     </main>

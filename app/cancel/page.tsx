@@ -4,7 +4,7 @@ export default function CancelPage() {
       <section className="accountCard">
         <p className="eyebrow">Maksua ei viimeistelty</p>
         <h1>Voit jatkaa kokeilua ilman maksutietoja</h1>
-        <p>Maksutavan voi lisätä myöhemmin ennen kokeilun päättymistä.</p>
+        <p>Maksutavan voi lisätä myöhemmin ennen kokeilun päättymistä. Ilman maksutietoja kokeilu ei muutu automaattisesti maksulliseksi.</p>
         <a className="button primary" href="/dashboard">Palaa omalle tilille</a>
       </section>
     </main>

@@ -53,6 +53,11 @@ export async function POST(request: Request) {
     },
     payment_method_collection: "always",
     tax_id_collection: { enabled: true },
+    custom_text: {
+      submit: {
+        message: "7 päivän kokeilun jälkeen tilaus muuttuu maksulliseksi, ellei sitä peruta ennen kokeilun päättymistä. Tilausta voi hallita Stripe Customer Portalissa."
+      }
+    },
     subscription_data: {
       trial_period_days: 7,
       metadata: {

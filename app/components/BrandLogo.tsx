@@ -4,8 +4,8 @@ type BrandLogoProps = {
 
 export function BrandLogo({ href = "/" }: BrandLogoProps) {
   return (
-    <a className="brand" href={href} aria-label="ChecKApp">
-      <img className="brandLogo" src="/checkapp-logo.png" alt="ChecKApp" />
+    <a className="brand" href={href} aria-label="CheckApp">
+      <img className="brandLogo" src="/checkapp-logo.png" alt="CheckApp" />
     </a>
   );
 }

@@ -12,6 +12,7 @@ This is the product version of the Check website: landing page, account area, tr
 - Customer dashboard
 - Download endpoint for the Mac app
 - License endpoint for the Mac app
+- Authenticated receipt recognition proxy endpoint for the Mac app
 - Usage endpoint for receipt counters
 - Stripe webhook to update subscription status
 
@@ -29,9 +30,10 @@ npm install
 cp .env.example .env.local
 ```
 
-3. Fill `.env.local` with Supabase and Stripe keys.
+3. Fill `.env.local` with Supabase, Stripe and server-side OpenAI keys.
    Add `OPENAI_API_KEY` to enable the customer support chat.
-   Optionally set `OPENAI_MODEL` to choose the model used by the chat.
+   The same server-side key is also used by `/api/recognize-receipt`.
+   Optionally set `OPENAI_MODEL` for chat and `OPENAI_RECEIPT_MODEL` for receipt recognition.
 
 4. Run the site:
 
@@ -77,7 +79,16 @@ npm run dev
 The Mac app should call:
 
 - `GET /api/license` with `Authorization: Bearer <supabase_access_token>`
+- `POST /api/recognize-receipt` with `Authorization: Bearer <supabase_access_token>` and a PNG image payload
 - `POST /api/usage` with `Authorization: Bearer <supabase_access_token>` after receipts are processed
+
+Receipt recognition is transit-only in the CheckApp backend. The endpoint validates auth,
+subscription/trial status, usage quota, MIME type and request size, then calls OpenAI
+Responses API with `store: false`. It does not intentionally store receipt images,
+Base64 payloads, raw OpenAI responses or recognized receipt JSON.
+
+Usage is incremented only after the Mac app successfully saves a receipt in Fennoa and
+calls `/api/usage` with `{ "count": 1 }`. Failed recognition does not consume quota.
 
 The app download link is controlled by:
 

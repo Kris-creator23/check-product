@@ -506,6 +506,31 @@ select {
   font-weight: 700;
 }
 
+.helperText {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.checkLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.checkLine input {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin-top: 2px;
+  padding: 0;
+}
+
 .supportChat {
   position: fixed;
   right: clamp(16px, 3vw, 30px);
@@ -604,6 +629,14 @@ select {
   padding: 12px;
 }
 
+.supportNotice {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding: 10px 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .supportForm input {
   min-height: 42px;
 }
@@ -679,12 +712,20 @@ select {
 }
 
 .footer {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, auto);
+  align-items: start;
   gap: 20px;
   padding: 28px clamp(18px, 4vw, 56px);
   border-top: 1px solid rgba(31, 42, 46, 0.08);
   color: var(--muted);
+}
+
+.footer p {
+  grid-column: 1 / -1;
+  max-width: 980px;
+  margin: 0;
+  font-size: 13px;
 }
 
 .accountPage {
@@ -772,8 +813,16 @@ select {
     width: 100%;
   }
 
-  .receipt,
+  .receipt {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .footer {
+    grid-template-columns: 1fr;
+  }
+
+  .footer div {
     align-items: flex-start;
     flex-direction: column;
   }

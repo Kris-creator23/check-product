@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { LegalFooter } from "./components/LegalFooter";
 import { SupportChat } from "./components/SupportChat";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ChecKApp | Kuittien automaatio Fennoaan",
-  description: "ChecKApp vie kuitit valitusta kansiosta Fennoaan automaattisesti.",
+  title: "CheckApp | Kuittien automaatio Fennoaan",
+  description: "CheckApp vie kuitit valitusta kansiosta Fennoaan automaattisesti.",
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png"
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fi">
       <body>
         {children}
+        <LegalFooter />
         <SupportChat />
       </body>
     </html>
