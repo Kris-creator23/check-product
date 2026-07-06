@@ -4,14 +4,14 @@ import { useMemo, useState } from "react";
 import { createBrowserSupabase } from "../lib/supabase";
 import { plans, type PlanId } from "../lib/plans";
 
-type AuthMode = "password" | "magic";
+type PasswordMode = "signin" | "signup";
 
 export default function HomePage() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanId>("pro");
-  const [authMode, setAuthMode] = useState<AuthMode>("magic");
+  const [passwordMode, setPasswordMode] = useState<PasswordMode>("signup");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -31,14 +31,13 @@ export default function HomePage() {
     setBusy(true);
     setMessage("");
 
-    if (authMode === "magic") {
-      const { error } = await supabase.auth.signInWithOtp({
+    if (passwordMode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
-        }
+        password
       });
-      setMessage(error ? error.message : "Tarkista sähköpostisi. Lähetimme kirjautumislinkin.");
+      setMessage(error ? error.message : "Kirjautuminen onnistui. Siirrytään omalle tilille.");
+      if (!error) window.location.href = `/dashboard?plan=${plan}`;
     } else {
       const { error } = await supabase.auth.signUp({
         email,
@@ -143,21 +142,19 @@ export default function HomePage() {
               </select>
             </label>
             <div className="tabs">
-              <button className={authMode === "magic" ? "selected" : ""} onClick={() => setAuthMode("magic")}>Sähköpostilinkki</button>
-              <button className={authMode === "password" ? "selected" : ""} onClick={() => setAuthMode("password")}>Salasana</button>
+              <button className={passwordMode === "signup" ? "selected" : ""} onClick={() => setPasswordMode("signup")}>Rekisteröidy</button>
+              <button className={passwordMode === "signin" ? "selected" : ""} onClick={() => setPasswordMode("signin")}>Kirjaudu</button>
             </div>
             <label>
               Sähköposti
               <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.fi" type="email" />
             </label>
-            {authMode === "password" && (
-              <label>
-                Salasana
-                <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Vähintään 8 merkkiä" type="password" />
-              </label>
-            )}
-            <button className="button primary full" disabled={busy || !email} onClick={signInWithEmail}>
-              Aloita kokeilu
+            <label>
+              Salasana
+              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Vähintään 8 merkkiä" type="password" />
+            </label>
+            <button className="button primary full" disabled={busy || !email || !password} onClick={signInWithEmail}>
+              {passwordMode === "signin" ? "Kirjaudu sisään" : "Aloita kokeilu"}
             </button>
             <button className="button secondary full" disabled={busy} onClick={signInWithGoogle}>
               Jatka Googlella
