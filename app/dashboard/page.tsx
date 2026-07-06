@@ -18,6 +18,7 @@ type Profile = {
 export default function DashboardPage() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userEmail, setUserEmail] = useState("");
   const [plan, setPlan] = useState<PlanId>("pro");
   const [message, setMessage] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -52,6 +53,7 @@ export default function DashboardPage() {
     });
     const data = await response.json();
     setProfile(data.profile ?? null);
+    setUserEmail(data.user?.email ?? "");
     if (data.profile?.selected_plan) setPlan(data.profile.selected_plan);
     setLoading(false);
   }
@@ -142,6 +144,7 @@ export default function DashboardPage() {
           {loading ? <p>Ladataan...</p> : (
             <>
               <div className="accountGrid">
+                <div><b>Sähköposti</b><span>{userEmail || "Ei tiedossa"}</span></div>
                 <div><b>Paketti</b><span>{profile?.selected_plan ? plans[profile.selected_plan].name : plans[plan].name}</span></div>
                 <div><b>Tila</b><span>{profile?.subscription_status ?? "trial / ei maksutapaa"}</span></div>
                 <div><b>Kuitit</b><span>{profile?.receipts_used ?? 0} / {plans[profile?.selected_plan ?? plan].quota}</span></div>
