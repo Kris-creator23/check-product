@@ -7,7 +7,7 @@ export const maxDuration = 30;
 
 const MAX_JSON_BYTES = 7 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set(["image/png"]);
+const ALLOWED_MIME_TYPES = new Set(["image/png", "image/jpeg"]);
 const ALLOWED_FIELDS = new Set(["imageBase64", "mimeType"]);
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 12;
@@ -221,7 +221,7 @@ Do not include explanations.
   }
 
   if (!openaiResponse.ok) {
-    return safeError("recognition failed", 502);
+    return safeError("recognition service rejected image", 502);
   }
 
   try {
@@ -233,6 +233,6 @@ Do not include explanations.
       data: normalizeReceiptData(parsed)
     });
   } catch {
-    return safeError("recognition failed", 502);
+    return safeError("recognition response could not be parsed", 502);
   }
 }
