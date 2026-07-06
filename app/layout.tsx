@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SupportChat } from "./components/SupportChat";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fi">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SupportChat />
+      </body>
     </html>
   );
 }

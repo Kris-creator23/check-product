@@ -5,7 +5,7 @@ This is the product version of the Check website: landing page, account area, tr
 ## What is included
 
 - Finnish product website
-- Signup with email link, email/password, and Google via Supabase
+- Signup and login with email/password and Google via Supabase
 - 7-day trial without payment details
 - Optional Stripe Checkout with 7-day free trial and payment method collected immediately
 - Plans: Basic 50 receipts/month, Pro 100 receipts/month, Premium 500 receipts/month
@@ -30,6 +30,8 @@ cp .env.example .env.local
 ```
 
 3. Fill `.env.local` with Supabase and Stripe keys.
+   Add `OPENAI_API_KEY` to enable the customer support chat.
+   Optionally set `OPENAI_MODEL` to choose the model used by the chat.
 
 4. Run the site:
 
