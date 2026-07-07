@@ -35,6 +35,7 @@ const receiptSchema = {
     total_net: { type: "number" },
     vat_amount: { type: "number" },
     currency: { type: "string" },
+    expense_type: { type: "string" },
     note: { type: "string" }
   },
   required: [
@@ -50,6 +51,7 @@ const receiptSchema = {
     "total_net",
     "vat_amount",
     "currency",
+    "expense_type",
     "note"
   ]
 };
@@ -104,6 +106,7 @@ function normalizeReceiptData(value: unknown) {
     total_net: totalNet,
     vat_amount: vatAmount,
     currency: normalizeString(data.currency) || "EUR",
+    expense_type: normalizeString(data.expense_type),
     note: normalizeString(data.note)
   };
 }
@@ -178,10 +181,13 @@ export async function POST(request: Request) {
     return safeError("file too large", 413);
   }
 
-  const prompt = `
+const prompt = `
 Read the receipt or invoice image and return only structured data.
 Use empty strings for missing text values and 0 for missing numeric values.
-Dates must use D.M.YYYY format when visible.
+Dates must use D.M.YYYY format when visible. If a receipt date is printed as DD.MM.YY, convert it to D.M.20YY.
+invoice_date and entry_date must be the actual purchase/receipt date from the receipt, not today's date.
+expense_type must be a short Finnish accounting-style expense description, for example "polttoainekulut", "laitteiden hankinta", "työvaatteet ja suojavarusteet", "toimistotarvikkeet", "pienhankinnat" or "muut ostot".
+note must not contain cashier names, payment card text, timestamps or long raw receipt text. Use note only for a short useful clarification, otherwise an empty string.
 Do not include explanations.
 `.trim();
 
