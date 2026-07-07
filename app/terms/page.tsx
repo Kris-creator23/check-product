@@ -7,7 +7,7 @@ export default function TermsPage() {
       <BrandLogo />
       <p className="eyebrow">Käyttöehdot</p>
       <h1>CheckAppin käyttöehdot</h1>
-      <p>Viimeksi päivitetty: 6. heinäkuuta 2026</p>
+      <p>Viimeksi päivitetty: 7. heinäkuuta 2026</p>
       <h2>1. Palvelu</h2>
       <p>CheckApp auttaa yrityksiä, toiminimiä ja taloushallinnon käyttäjiä automatisoimaan kuittien lataamista Fennoaan. CheckApp on itsenäinen tuote eikä Fennoan virallinen sovellus.</p>
       <p>CheckApp on ART-HAUSin tarjoama itsenäinen työkalu Fennoa-käyttäjille. CheckApp ei ole Fennoan virallinen sovellus eikä Fennoan ylläpitämä tai hyväksymä tuote.</p>
@@ -18,9 +18,9 @@ export default function TermsPage() {
       <h2>4. Kuittien tunnistus</h2>
       <p>CheckApp käyttää OpenAI API:a kuittitietojen tunnistamiseen. Tunnistus voi sisältää esimerkiksi toimittajan nimen, maa- ja yritystiedot, lasku- tai kuittinumeron, päivämäärät, summat, arvonlisäveron, valuutan ja muistiinpanokentän.</p>
       <h2>5. Automaatio Fennoassa</h2>
-      <p>CheckApp käyttää käyttäjän Fennoa-tiliä ja voi täyttää sekä tallentaa kuitin tiedot Fennoaan automaattisesti. CheckApp ei lupaa kirjanpidollista tai verotuksellista oikeellisuutta. Käyttäjä vastaa Fennoa-tilinsä käyttöoikeuksista, kirjanpitoaineiston oikeellisuudesta ja automaattisesti tallennettujen tietojen tarkistamisesta Fennoassa.</p>
+      <p>CheckApp toimii käyttäjän Fennoa-istunnossa ja voi täyttää kuitin tiedot Fennoaan paikallisen selainautomaation avulla. CheckApp voi ohjata käyttäjää tarkistamaan ja tallentamaan kuitin Fennoassa. CheckApp ei lupaa kirjanpidollista tai verotuksellista oikeellisuutta. Käyttäjä vastaa Fennoa-tilinsä käyttöoikeuksista, kirjanpitoaineiston oikeellisuudesta ja tietojen tarkistamisesta Fennoassa.</p>
       <h2>6. Fennoa-tunnukset</h2>
-      <p>Fennoa-salasana tallennetaan käyttäjän laitteelle järjestelmän suojattuun tallennukseen, kuten macOS Keychainiin. Käyttäjä vastaa siitä, että hänellä on oikeus käyttää Fennoa-tiliä automaation kanssa.</p>
+      <p>CheckApp ei pyydä eikä tallenna Fennoa-salasanaa. Käyttäjä kirjautuu Fennoaan suoraan Fennoan omassa kirjautumisnäkymässä ja syöttää mahdollisen 2FA-koodin suoraan Fennoaan. Käyttäjä vastaa siitä, että hänellä on oikeus käyttää Fennoa-tiliä automaation kanssa.</p>
       <h2>7. Yhteys</h2>
       <p>Tuotteeseen liittyvissä kysymyksissä ota yhteyttä: {siteContent.supportEmail}. Yritysosoite: {siteContent.businessAddress}.</p>
     </main>

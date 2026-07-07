@@ -92,7 +92,7 @@ export default function HomePage() {
           <div className="window" aria-label="CheckApp-sovelluksen esikatselu">
             <div className="windowBar"><span /><span /><span /></div>
             <div className="appPanel">
-              <div className="status ok"><span /><div><b>Fennoa yhdistetty</b><p>Fennoa-salasana säilyy macOS Keychainissa</p></div></div>
+              <div className="status ok"><span /><div><b>Fennoa avattu</b><p>Käyttäjä kirjautuu suoraan Fennoaan</p></div></div>
               <div className="folder"><i /><div><b>Kuittikansio</b><p>/Receipts/To upload</p></div></div>
               <div className="queue">
                 <div className="queueHead"><b>Latausjono</b><span>Tänään</span></div>
@@ -192,10 +192,10 @@ export default function HomePage() {
         <section className="section split" id="security">
           <div>
             <p className="eyebrow">Tietoturva</p>
-            <h2>Fennoa-salasana pysyy käyttäjän hallinnassa</h2>
+            <h2>Fennoa-kirjautuminen pysyy käyttäjän hallinnassa</h2>
           </div>
           <div className="featureList">
-            <div><b>macOS Keychain</b><span>Fennoa-salasana säilytetään Macin avainnipussa.</span></div>
+            <div><b>Suora Fennoa-kirjautuminen</b><span>CheckApp ei pyydä eikä tallenna Fennoa-salasanaa. Käyttäjä kirjautuu Fennoaan Fennoan omassa kirjautumisnäkymässä.</span></div>
             <div><b>Käyttäjän kansio</b><span>Kuitit haetaan käyttäjän itse valitsemasta kansiosta.</span></div>
             <div><b>Lisenssitarkistus</b><span>CheckAppin backend tarkistaa trialin, tilauksen ja kuittikiintiön.</span></div>
           </div>

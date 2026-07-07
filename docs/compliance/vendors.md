@@ -1,6 +1,6 @@
 # CheckApp vendor register
 
-Last checked: 2026-07-06
+Last checked: 2026-07-07
 Owner: ART-HAUS / CheckApp
 
 This register is a launch checklist document. It does not replace signed or accepted supplier DPAs, terms, or the customer-facing DPA.
@@ -40,3 +40,10 @@ This register is a launch checklist document. It does not replace signed or acce
 - Data categories: Google account identity information needed for login, such as email and provider user ID.
 - DPA status: Review Google terms and Supabase provider configuration before launch.
 - International transfer note: Review Google terms, transfer mechanisms, and whether Google login is enabled in production.
+
+## GitHub
+
+- Purpose: Hosting and distribution of the CheckApp Mac DMG through GitHub Releases.
+- Data categories: Release artifacts and download metadata processed by GitHub when users download the DMG. CheckApp should not upload customer receipt data to GitHub.
+- DPA status: Review GitHub terms and any applicable data processing terms before broad public launch.
+- International transfer note: GitHub is used as a software distribution provider; review GitHub's transfer mechanisms and terms if the distribution channel remains in production.

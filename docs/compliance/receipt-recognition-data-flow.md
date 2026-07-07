@@ -1,14 +1,14 @@
 # Receipt recognition data flow
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
 ## Architecture
 
-Local receipt -> CheckApp backend transient processing -> OpenAI Responses API -> structured recognition result -> Mac app -> local Playwright automation -> Fennoa.
+Local receipt -> CheckApp backend transient processing -> OpenAI Responses API -> structured recognition result -> Mac app -> local Playwright automation in the user's Fennoa session -> Fennoa.
 
 CheckApp käsittelee Asiakkaan kuittikuvaa väliaikaisesti backend-välityspalvelussa ainoastaan tietojen tunnistamisen toteuttamiseksi ja OpenAI API -palveluun välittämiseksi. CheckAppin backend-palvelua ei ole tarkoitettu kuittikuvien, Base64-sisällön, OpenAI:n raakavastausten tai tunnistettujen kirjanpitokenttien pysyvään säilyttämiseen.
 
-Käsittelyn jälkeen Mac-sovellus käyttää tunnistettuja tietoja Fennoan kenttien täyttämiseen paikallisen selainautomaation avulla. Käyttömäärän laskentaa varten backend-palveluun lähetetään onnistuneen Fennoa-tallennuksen jälkeen vain minimimäärä käyttötietoa.
+Käsittelyn jälkeen Mac-sovellus käyttää tunnistettuja tietoja Fennoan kenttien täyttämiseen paikallisen selainautomaation avulla käyttäjän Fennoa-istunnossa. Käyttömäärän laskentaa varten backend-palveluun lähetetään onnistuneen käsittelyn jälkeen vain minimimäärä käyttötietoa.
 
 ## Technical facts for legal review
 
@@ -29,12 +29,24 @@ Käsittelyn jälkeen Mac-sovellus käyttää tunnistettuja tietoja Fennoan kentt
 - Usage increment moment: usage is incremented only after the Mac app successfully saves the receipt in Fennoa and calls `/api/usage` with `{ "count": 1 }`.
 - Failed recognition usage rule: failed OpenAI/backend recognition does not consume monthly receipt quota.
 - Double counting prevention: `/api/recognize-receipt` does not increment usage; `/api/usage` accepts only `{ "count": 1 }` and rejects extra fields.
+- Mac app local settings: selected receipt folder path, AI processing acknowledgement, and CheckApp session token can be stored locally on the user's Mac.
+- Local processed files: successful receipts are moved to `~/Documents/CheckApp/processed`; failed receipts are moved to `~/Documents/CheckApp/failed`.
+- Local technical log: the app can write technical diagnostics to `~/Library/Logs/CheckApp.log`. The log is not intended for permanent receipt-content storage.
 
 ## Fennoa credentials
 
 - Fennoa password does not pass through the recognition proxy.
 - Fennoa 2FA does not pass through the recognition proxy.
-- Fennoa email/password are used locally by the Mac app for the browser automation login flow.
+- The current Mac app does not ask for or store the Fennoa password. The user logs in directly in Fennoa's own login view.
+- Any Fennoa 2FA code is entered by the user directly into Fennoa.
+- The app uses the active Fennoa browser session for local automation after login.
+
+## CheckApp login in the Mac app
+
+- Primary login method: CheckApp email code.
+- Google-created accounts: user enters the same Google email in the Mac app and receives a one-time email code; the app does not ask for the Google password.
+- Fallback login method: CheckApp password login if email-code sending fails and the user has a CheckApp password.
+- The CheckApp session token is stored locally on the user's Mac for license, quota, recognition and usage API calls.
 
 ## Logging policy
 
@@ -71,6 +83,7 @@ The current endpoint does not intentionally write recognition logs.
 - Confirm Vercel request-body logging/retention behaviour for the production plan.
 - Run one successful receipt scenario and one failed recognition scenario before public release.
 - Run inactive subscription / quota exceeded scenarios and confirm recognition is blocked.
+- Publish the Mac app through a notarized DMG before broad public launch. Current GitHub Releases distribution must point to the notarized DMG once notarization is complete.
 
 ## Pre-launch verdict
 

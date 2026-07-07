@@ -51,7 +51,7 @@ npm run dev
    - Google
 5. Add redirect URLs:
    - `http://localhost:3000/dashboard`
-   - your future production domain, for example `https://check.fi/dashboard`
+   - your production domain, for example `https://checkapp.fi/dashboard`
 
 ## Stripe setup
 
