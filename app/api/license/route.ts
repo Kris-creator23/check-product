@@ -21,12 +21,14 @@ export async function GET(request: Request) {
   const paidActive = ["active", "trialing"].includes(profile.subscription_status ?? "");
   const quota = plan?.quota ?? 0;
   const receiptsUsed = profile.receipts_used ?? 0;
+  const receiptsRemaining = Math.max(0, quota - receiptsUsed);
 
   return NextResponse.json({
     active: (trialActive || paidActive) && receiptsUsed < quota,
     plan: selectedPlan,
     quota,
     receiptsUsed,
+    receiptsRemaining,
     trialEndsAt: profile.trial_ends_at,
     subscriptionStatus: profile.subscription_status,
     reason: receiptsUsed >= quota ? "quota_exceeded" : null
