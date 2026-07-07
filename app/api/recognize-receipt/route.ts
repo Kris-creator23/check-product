@@ -186,6 +186,7 @@ Read the receipt or invoice image and return only structured data.
 Use empty strings for missing text values and 0 for missing numeric values.
 Dates must use D.M.YYYY format when visible. If a receipt date is printed as DD.MM.YY, convert it to D.M.20YY.
 invoice_date and entry_date must be the actual purchase/receipt date from the receipt, not today's date.
+country must be the English country name, for example "Finland", not "Suomi".
 expense_type must be a short Finnish accounting-style expense description, for example "polttoainekulut", "laitteiden hankinta", "työvaatteet ja suojavarusteet", "toimistotarvikkeet", "pienhankinnat" or "muut ostot".
 note must not contain cashier names, payment card text, timestamps or long raw receipt text. Use note only for a short useful clarification, otherwise an empty string.
 Do not include explanations.
