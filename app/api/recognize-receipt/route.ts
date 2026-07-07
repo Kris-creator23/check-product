@@ -184,10 +184,12 @@ export async function POST(request: Request) {
 const prompt = `
 Read the receipt or invoice image and return only structured data.
 Use empty strings for missing text values and 0 for missing numeric values.
+Never copy the receipt date into supplier_name, vat_number, business_id, invoice_number, expense_type or note. If a field is not clearly visible, return an empty string for that field.
 Dates must use D.M.YYYY format when visible. If a receipt date is printed as DD.MM.YY, convert it to D.M.20YY.
 invoice_date and entry_date must be the actual purchase/receipt date from the receipt, not today's date.
 If the receipt date is not clearly visible, use an empty string. Never infer or use the current date.
-country must be the English country name, for example "Finland", not "Suomi".
+country must be the supplier country in English, for example "Finland" or "Estonia", not "Suomi". Do not assume Finland for foreign receipts.
+vat_number must be an actual VAT number such as FI12345678 or EE123456789. business_id must be a Finnish Y-tunnus only; for foreign suppliers use an empty string.
 expense_type must be a short Finnish accounting-style expense description, for example "polttoainekulut", "laitteiden hankinta", "työvaatteet ja suojavarusteet", "toimistotarvikkeet", "pienhankinnat" or "muut ostot".
 expense_type must describe the purchase purpose, not the store number, branch, cashier, receipt type or payment method.
 note must not contain cashier names, payment card text, timestamps or long raw receipt text. Use note only for a short useful clarification, otherwise an empty string.
