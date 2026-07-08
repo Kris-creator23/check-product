@@ -155,15 +155,8 @@ export default function DashboardPage() {
       </header>
       <main className="accountPage">
         <section className="accountCard">
-          <div className="accountHeader">
-            <div>
-              <p className="eyebrow">Oma tili</p>
-              <h1>Hallinnoi kokeilua ja tilausta</h1>
-            </div>
-            <button className="button secondary" onClick={signOut} disabled={signingOut}>
-              {signingOut ? "Kirjaudutaan ulos..." : "Kirjaudu ulos"}
-            </button>
-          </div>
+          <p className="eyebrow">Oma tili</p>
+          <h1>Hallinnoi kokeilua ja tilausta</h1>
           {loading ? <p>Ladataan...</p> : (
             <>
               <div className="accountGrid">
@@ -200,9 +193,6 @@ export default function DashboardPage() {
                 <button className="button primary" onClick={startTrial} disabled={!b2bAccepted}>Lataa Mac-sovellus ilman maksutietoja</button>
                 <button className="button secondary" onClick={checkout} disabled={!b2bAccepted}>Lisää maksutapa nyt</button>
                 <button className="button secondary" onClick={portal}>Hallinnoi tilausta</button>
-                <button className="button secondary" onClick={signOut} disabled={signingOut}>
-                  {signingOut ? "Kirjaudutaan ulos..." : "Kirjaudu ulos"}
-                </button>
               </div>
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>
