@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     user_id: auth.user.id,
     company_name: body.companyName,
     business_id: body.businessId ?? null,
+    vat_id: body.vatId ?? null,
     email: body.email,
     plan: plan.id,
     note: body.note ?? null

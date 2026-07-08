@@ -42,7 +42,8 @@ export async function POST(request: Request) {
         selected_plan: plan,
         stripe_customer_id: String(session.customer),
         stripe_subscription_id: String(session.subscription),
-        subscription_status: "trialing"
+        subscription_status: session.metadata?.trial_mode === "none" ? "active" : "trialing",
+        ...(session.metadata?.trial_mode === "none" ? {} : { trial_started_at: new Date().toISOString() })
       }, { onConflict: "user_id" });
     }
   }

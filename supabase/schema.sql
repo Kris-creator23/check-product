@@ -1,6 +1,10 @@
 create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   email text,
+  company_name text,
+  business_id text,
+  business_id_normalized text,
+  vat_id text,
   selected_plan text check (selected_plan in ('basic', 'pro', 'premium')),
   trial_started_at timestamptz,
   trial_ends_at timestamptz,
@@ -13,6 +17,15 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists company_name text;
+alter table public.profiles add column if not exists business_id text;
+alter table public.profiles add column if not exists business_id_normalized text;
+alter table public.profiles add column if not exists vat_id text;
+
+create index if not exists profiles_business_id_normalized_idx
+  on public.profiles (business_id_normalized)
+  where business_id_normalized is not null;
 
 alter table public.profiles enable row level security;
 
@@ -50,11 +63,14 @@ create table if not exists public.company_invoice_requests (
   user_id uuid references auth.users(id) on delete set null,
   company_name text not null,
   business_id text,
+  vat_id text,
   email text not null,
   plan text check (plan in ('basic', 'pro', 'premium')),
   note text,
   status text not null default 'new',
   created_at timestamptz not null default now()
 );
+
+alter table public.company_invoice_requests add column if not exists vat_id text;
 
 alter table public.company_invoice_requests enable row level security;

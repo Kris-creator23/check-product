@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BrandLogo } from "./components/BrandLogo";
+import { cleanCompanyInput, isValidFinnishBusinessId } from "../lib/company";
 import { createBrowserSupabase } from "../lib/supabase";
 import { plans, type PlanId } from "../lib/plans";
 
@@ -11,16 +12,48 @@ export default function HomePage() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [businessId, setBusinessId] = useState("");
+  const [vatId, setVatId] = useState("");
   const [plan, setPlan] = useState<PlanId>("pro");
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("signup");
   const [b2bAccepted, setB2bAccepted] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const company = cleanCompanyInput({ companyName, businessId, vatId });
+  const companyRequired = passwordMode === "signup";
+  const canSubmit = passwordMode === "signin"
+    ? Boolean(email && password)
+    : Boolean(email && password && company.companyName && company.businessId && b2bAccepted);
+
+  function validateCompany() {
+    if (!company.companyName || !company.businessId) {
+      setMessage("Täytä yrityksen nimi ja Y-tunnus.");
+      return false;
+    }
+    if (!isValidFinnishBusinessId(company.businessId)) {
+      setMessage("Tarkista Y-tunnus. Käytä muotoa 1234567-8.");
+      return false;
+    }
+    return true;
+  }
+
+  function saveCompanyDraft() {
+    window.localStorage.setItem("checkappCompanyDraft", JSON.stringify({
+      companyName: company.companyName,
+      businessId: company.businessId,
+      vatId: company.vatId
+    }));
+  }
 
   async function signInWithGoogle() {
-    if (!b2bAccepted) {
+    if (passwordMode === "signup" && !b2bAccepted) {
       setMessage("Vahvista ensin, että käytät CheckAppia yrityksenä tai organisaation edustajana.");
       return;
+    }
+    if (passwordMode === "signup") {
+      if (!validateCompany()) return;
+      saveCompanyDraft();
     }
 
     setBusy(true);
@@ -39,6 +72,7 @@ export default function HomePage() {
       setMessage("Vahvista ensin, että käytät CheckAppia yrityksenä tai organisaation edustajana.");
       return;
     }
+    if (passwordMode === "signup" && !validateCompany()) return;
 
     setBusy(true);
     setMessage("");
@@ -55,9 +89,16 @@ export default function HomePage() {
         email,
         password,
         options: {
+          data: {
+            company_name: company.companyName,
+            business_id: company.businessId,
+            business_id_normalized: company.businessIdNormalized,
+            vat_id: company.vatId
+          },
           emailRedirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
         }
       });
+      if (!error) saveCompanyDraft();
       setMessage(error ? error.message : "Tili luotu. Tarkista sähköposti, jos vahvistus vaaditaan.");
     }
 
@@ -171,6 +212,22 @@ export default function HomePage() {
               Salasana
               <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Vähintään 8 merkkiä" type="password" />
             </label>
+            {companyRequired && (
+              <>
+                <label>
+                  Yrityksen nimi
+                  <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Yritys Oy" />
+                </label>
+                <label>
+                  Y-tunnus
+                  <input value={businessId} onChange={(event) => setBusinessId(event.target.value)} placeholder="1234567-8" />
+                </label>
+                <label>
+                  ALV-tunnus, jos käytössä
+                  <input value={vatId} onChange={(event) => setVatId(event.target.value)} placeholder="FI12345678" />
+                </label>
+              </>
+            )}
             <label className="checkLine">
               <input
                 type="checkbox"
@@ -179,10 +236,10 @@ export default function HomePage() {
               />
               <span>Vahvistan, että käytän CheckAppia yrityksenä, yksityisenä elinkeinonharjoittajana tai organisaation edustajana, en kuluttajana yksityiseen käyttöön.</span>
             </label>
-            <button className="button primary full" disabled={busy || !email || !password} onClick={signInWithEmail}>
+            <button className="button primary full" disabled={busy || !canSubmit} onClick={signInWithEmail}>
               {passwordMode === "signin" ? "Kirjaudu sisään" : "Aloita kokeilu"}
             </button>
-            <button className="button secondary full" disabled={busy || !b2bAccepted} onClick={signInWithGoogle}>
+            <button className="button secondary full" disabled={busy || (passwordMode === "signup" && (!b2bAccepted || !company.companyName || !company.businessId))} onClick={signInWithGoogle}>
               Jatka Googlella
             </button>
             {message && <p className="message">{message}</p>}

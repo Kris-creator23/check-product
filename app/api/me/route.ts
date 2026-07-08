@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     profile,
     user: {
       id: auth.user.id,
-      email: auth.user.email
+      email: auth.user.email,
+      metadata: auth.user.user_metadata
     }
   });
 }
