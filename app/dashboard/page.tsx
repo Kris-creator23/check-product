@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [invoiceEmail, setInvoiceEmail] = useState("");
   const [b2bAccepted, setB2bAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -127,6 +128,18 @@ export default function DashboardPage() {
     setMessage("Laskupyyntö lähetetty. Otamme yhteyttä sähköpostitse.");
   }
 
+  async function signOut() {
+    setSigningOut(true);
+    setMessage("");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setSigningOut(false);
+      setMessage(error.message);
+      return;
+    }
+    window.location.href = "/";
+  }
+
   return (
     <>
       <header className="siteHeader">
@@ -135,12 +148,22 @@ export default function DashboardPage() {
           <a href="/">Etusivu</a>
           <a href="/#pricing">Hinnat</a>
           <a href="/#security">Tietoturva</a>
+          <button className="button secondary navButton" onClick={signOut} disabled={signingOut}>
+            {signingOut ? "Kirjaudutaan ulos..." : "Kirjaudu ulos"}
+          </button>
         </nav>
       </header>
       <main className="accountPage">
         <section className="accountCard">
-          <p className="eyebrow">Oma tili</p>
-          <h1>Hallinnoi kokeilua ja tilausta</h1>
+          <div className="accountHeader">
+            <div>
+              <p className="eyebrow">Oma tili</p>
+              <h1>Hallinnoi kokeilua ja tilausta</h1>
+            </div>
+            <button className="button secondary" onClick={signOut} disabled={signingOut}>
+              {signingOut ? "Kirjaudutaan ulos..." : "Kirjaudu ulos"}
+            </button>
+          </div>
           {loading ? <p>Ladataan...</p> : (
             <>
               <div className="accountGrid">
@@ -177,6 +200,9 @@ export default function DashboardPage() {
                 <button className="button primary" onClick={startTrial} disabled={!b2bAccepted}>Lataa Mac-sovellus ilman maksutietoja</button>
                 <button className="button secondary" onClick={checkout} disabled={!b2bAccepted}>Lisää maksutapa nyt</button>
                 <button className="button secondary" onClick={portal}>Hallinnoi tilausta</button>
+                <button className="button secondary" onClick={signOut} disabled={signingOut}>
+                  {signingOut ? "Kirjaudutaan ulos..." : "Kirjaudu ulos"}
+                </button>
               </div>
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>

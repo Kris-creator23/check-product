@@ -172,6 +172,11 @@ h3 {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.navButton {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
 .button.full {
   width: 100%;
 }
@@ -742,6 +747,13 @@ select {
   box-shadow: var(--shadow);
 }
 
+.accountHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .accountGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -788,10 +800,15 @@ select {
 @media (max-width: 920px) {
   .hero,
   .split,
+  .accountHeader,
   .pricingGrid,
   .accountGrid,
   .formGrid {
     grid-template-columns: 1fr;
+  }
+
+  .accountHeader {
+    display: grid;
   }
 
   .hero {
