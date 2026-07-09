@@ -45,15 +45,18 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    const debugCode = error.code ?? `supabase_${error.status ?? "unknown"}`;
+
     console.error("CheckApp login code send failed", {
       email,
       status: error.status,
-      code: error.code,
+      code: debugCode,
       message: error.message
     });
 
     return NextResponse.json({
-      error: "Kirjautumiskoodia ei voitu lähettää. Kokeile hetken kuluttua uudelleen tai kirjaudu salasanalla."
+      error: "Kirjautumiskoodia ei voitu lähettää. Kokeile hetken kuluttua uudelleen tai kirjaudu salasanalla.",
+      debugCode
     }, { status: 400 });
   }
 
