@@ -38,10 +38,20 @@ export async function POST(request: Request) {
   }
 
   const { error } = await getAuthClient().auth.signInWithOtp({
-    email
+    email,
+    options: {
+      shouldCreateUser: false
+    }
   });
 
   if (error) {
+    console.error("CheckApp login code send failed", {
+      email,
+      status: error.status,
+      code: error.code,
+      message: error.message
+    });
+
     return NextResponse.json({
       error: "Kirjautumiskoodia ei voitu lähettää. Kokeile hetken kuluttua uudelleen tai kirjaudu salasanalla."
     }, { status: 400 });
