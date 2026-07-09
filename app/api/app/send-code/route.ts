@@ -56,7 +56,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       error: "Kirjautumiskoodia ei voitu lähettää. Kokeile hetken kuluttua uudelleen tai kirjaudu salasanalla.",
-      debugCode
+      debugCode,
+      debugMessage: error.message
     }, { status: 400 });
   }
 
