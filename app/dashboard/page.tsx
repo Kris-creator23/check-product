@@ -256,6 +256,10 @@ export default function DashboardPage() {
                 tilaus jatkuu 7 päivän kokeilun jälkeen maksullisena, ellei sitä peruta ennen kokeilun päättymistä.
                 Tilausta voi hallita ja perua Stripe Customer Portalissa ilman sähköpostipyyntöä.
               </p>
+              <p className="helperText">
+                Mac voi ensimmäisellä avauskerralla varoittaa, koska CheckApp ladataan verkkosivulta eikä App Storesta.
+                Avaa sovellus tarvittaessa Finderissa: ctrl-klikkaa CheckAppia, valitse Avaa ja vahvista Avaa.
+              </p>
               <div className="actions">
                 <button className="button primary" onClick={startTrial} disabled={!b2bAccepted}>Lataa Mac-sovellus ilman maksutietoja</button>
                 <button className="button secondary" onClick={checkout} disabled={!b2bAccepted}>Lisää maksutapa nyt</button>

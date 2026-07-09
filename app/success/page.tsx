@@ -5,6 +5,7 @@ export default function SuccessPage() {
         <p className="eyebrow">Maksutapa lisätty</p>
         <h1>CheckApp on valmis käyttöön</h1>
         <p>Ensimmäiset 7 päivää ovat maksuttomat. Sen jälkeen tilaus jatkuu maksullisena valitulla paketilla, ellei sitä peruta ennen kokeilun päättymistä Stripe Customer Portalissa.</p>
+        <p>Mac voi ensimmäisellä avauskerralla varoittaa, koska CheckApp ladataan verkkosivulta eikä App Storesta. Avaa sovellus tarvittaessa Finderissa: ctrl-klikkaa CheckAppia, valitse Avaa ja vahvista Avaa.</p>
         <a className="button primary" href="/api/download">Lataa CheckApp Macille</a>
         <a className="button secondary" href="/dashboard">Oma tili</a>
       </section>

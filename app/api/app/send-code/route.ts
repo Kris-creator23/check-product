@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { createAdminSupabase } from "../../../../lib/supabase";
 
 function getAuthClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,14 +21,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Anna kelvollinen sähköpostiosoite." }, { status: 400 });
   }
 
+  const { data: profile, error: profileError } = await createAdminSupabase()
+    .from("profiles")
+    .select("user_id")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (profileError) {
+    return NextResponse.json({ error: profileError.message }, { status: 500 });
+  }
+
+  if (!profile) {
+    return NextResponse.json({
+      error: "Sähköpostilla ei löytynyt aktiivista CheckApp-tiliä. Rekisteröidy tai aloita kokeilu ensin osoitteessa https://checkapp.fi."
+    }, { status: 400 });
+  }
+
   const { error } = await getAuthClient().auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false }
+    email
   });
 
   if (error) {
     return NextResponse.json({
-      error: "Sähköpostilla ei löytynyt aktiivista CheckApp-tiliä. Rekisteröidy tai aloita kokeilu ensin osoitteessa https://checkapp.fi."
+      error: "Kirjautumiskoodia ei voitu lähettää. Kokeile hetken kuluttua uudelleen tai kirjaudu salasanalla."
     }, { status: 400 });
   }
 
