@@ -399,6 +399,9 @@ def open_new_receipt(page):
             "Fennoa-ikkuna suljettiin ennen uuden kuitin avaamista. Käynnistä CheckApp uudelleen."
         )
 
+    if is_new_receipt_form_open(page):
+        return
+
     opened = click_by_visible_text(page, "Uusi kuitti")
 
     if not opened:
@@ -423,6 +426,13 @@ def open_new_receipt(page):
         wait_for_manual_new_receipt_view(page)
 
     page.wait_for_timeout(200)
+
+
+def is_new_receipt_form_open(page):
+    try:
+        return page.locator('input[type="file"]').first.is_visible(timeout=300)
+    except Exception:
+        return False
 
 
 def vat_to_business_id(vat):
@@ -644,16 +654,16 @@ def upload_all_receipts(page, receipts_dir=None):
 
             open_new_receipt(page)
 
+            print("Recognition started.")
+            data = parse_receipt(receipt)
+            data = sanitize_receipt_data(data)
+            print("Recognition completed.")
+
             page.locator(
                 'input[type="file"]'
             ).set_input_files(str(receipt))
 
             print("✅ Kuitti ladattu Fennoaan.")
-
-            print("Recognition started.")
-            data = parse_receipt(receipt)
-            data = sanitize_receipt_data(data)
-            print("Recognition completed.")
 
             page.wait_for_selector(
                 "#PurchaseInvoiceSupplierName",
@@ -805,3 +815,9 @@ def upload_all_receipts(page, receipts_dir=None):
         "payments."
     )
     print("=" * 60)
+
+    return {
+        "processed": processed_count,
+        "failed": failed_count,
+        "total": len(receipts),
+    }

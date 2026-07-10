@@ -23,8 +23,16 @@ def main():
     require_active_subscription()
     receipts_dir = ensure_receipt_setup()
     page = login()
-    upload_all_receipts(page, receipts_dir)
-    show_dialog("Valmis. Kuittien käsittely on päättynyt.")
+    result = upload_all_receipts(page, receipts_dir)
+    if result["failed"]:
+        show_dialog(
+            "Kuittien käsittely päättyi, mutta kaikkia kuitteja ei saatu käsiteltyä.\n\n"
+            f"Onnistui: {result['processed']}\n"
+            f"Epäonnistui: {result['failed']}\n\n"
+            "Epäonnistuneet tiedostot siirrettiin failed-kansioon."
+        )
+    else:
+        show_dialog("Valmis. Kuittien käsittely on päättynyt.")
 
 
 if __name__ == "__main__":

@@ -206,7 +206,7 @@ Do not include explanations.
         authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_RECEIPT_MODEL ?? "gpt-5.4-mini",
+        model: process.env.OPENAI_RECEIPT_MODEL ?? "gpt-5-mini",
         store: false,
         input: [
           {
