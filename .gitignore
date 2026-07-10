@@ -1,8 +1,14 @@
 node_modules
 .DS_Store
+__pycache__/
 .next
 .pnpm-store
 tsconfig.tsbuildinfo
 .env
 .env.local
 .env.*.local
+*.dmg
+*.zip
+*.app/
+processed/
+failed/

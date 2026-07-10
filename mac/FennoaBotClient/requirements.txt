@@ -1,0 +1,9 @@
+playwright
+python-dotenv
+pyotp
+loguru
+rich
+requests
+keyring
+PyMuPDF
+Pillow
