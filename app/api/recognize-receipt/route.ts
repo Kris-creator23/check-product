@@ -11,6 +11,7 @@ const ALLOWED_MIME_TYPES = new Set(["image/png", "image/jpeg"]);
 const ALLOWED_FIELDS = new Set(["imageBase64", "mimeType"]);
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 12;
+const DEFAULT_RECEIPT_MODEL = "gpt-5.6-luna";
 
 type RateLimitBucket = {
   startedAt: number;
@@ -119,6 +120,19 @@ function getOutputText(data: Record<string, any>) {
     .join("\n");
 }
 
+async function readOpenAIError(response: Response) {
+  const text = await response.text();
+  if (!text) return `OpenAI returned HTTP ${response.status}`;
+
+  try {
+    const payload = JSON.parse(text);
+    const message = payload?.error?.message || payload?.error || text;
+    return `OpenAI returned HTTP ${response.status}: ${String(message).slice(0, 500)}`;
+  } catch {
+    return `OpenAI returned HTTP ${response.status}: ${text.slice(0, 500)}`;
+  }
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return safeError("OpenAI API key is missing in production", 503);
@@ -196,9 +210,7 @@ note must not contain cashier names, payment card text, timestamps or long raw r
 Do not include explanations.
 `.trim();
 
-  let openaiResponse: Response;
-  try {
-    openaiResponse = await fetch("https://api.openai.com/v1/responses", {
+  const requestOpenAI = (model: string) => fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       signal: AbortSignal.timeout(25_000),
       headers: {
@@ -206,7 +218,7 @@ Do not include explanations.
         authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_RECEIPT_MODEL ?? "gpt-5-mini",
+        model,
         store: false,
         input: [
           {
@@ -227,6 +239,15 @@ Do not include explanations.
         }
       })
     });
+
+  let openaiResponse: Response;
+  try {
+    const configuredModel = process.env.OPENAI_RECEIPT_MODEL || DEFAULT_RECEIPT_MODEL;
+    openaiResponse = await requestOpenAI(configuredModel);
+
+    if (!openaiResponse.ok && configuredModel !== DEFAULT_RECEIPT_MODEL) {
+      openaiResponse = await requestOpenAI(DEFAULT_RECEIPT_MODEL);
+    }
   } catch (error) {
     const errorName = error instanceof Error ? error.name : "";
     if (errorName === "TimeoutError" || errorName === "AbortError") {
@@ -236,7 +257,7 @@ Do not include explanations.
   }
 
   if (!openaiResponse.ok) {
-    return safeError("recognition service rejected image", 502);
+    return safeError(await readOpenAIError(openaiResponse), 502);
   }
 
   try {

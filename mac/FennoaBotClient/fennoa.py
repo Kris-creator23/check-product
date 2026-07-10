@@ -654,16 +654,16 @@ def upload_all_receipts(page, receipts_dir=None):
 
             open_new_receipt(page)
 
-            print("Recognition started.")
-            data = parse_receipt(receipt)
-            data = sanitize_receipt_data(data)
-            print("Recognition completed.")
-
             page.locator(
                 'input[type="file"]'
             ).set_input_files(str(receipt))
 
             print("✅ Kuitti ladattu Fennoaan.")
+
+            print("Recognition started.")
+            data = parse_receipt(receipt)
+            data = sanitize_receipt_data(data)
+            print("Recognition completed.")
 
             page.wait_for_selector(
                 "#PurchaseInvoiceSupplierName",
@@ -802,7 +802,8 @@ def upload_all_receipts(page, receipts_dir=None):
                 pass
 
             failed_count += 1
-            continue
+            print("CheckApp pysähtyy, jotta Fennoaan ei avata lisää keskeneräisiä kuitteja.")
+            break
 
     print()
     print("=" * 60)
