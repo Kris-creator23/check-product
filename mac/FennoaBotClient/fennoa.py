@@ -599,22 +599,8 @@ def safe_error_detail(error):
     return message[:300]
 
 
-def upload_all_receipts(page, receipts_dir=None):
-    confirm_receipt_processing_start(page)
-
-    print()
-    print("=" * 60)
-    print("Kuittien käsittely alkaa")
-    print("=" * 60)
-    print("Seuraavaksi CheckApp käyttää valittua kuittikansiota tai kysyy uuden kansion polun.")
-
-    if receipts_dir is None:
-        ensure_ai_acknowledgement()
-        receipts_dir = get_receipts_dir()
-
-    print(f"Kuittikansio: {receipts_dir}")
-
-    receipts = [
+def find_receipts(receipts_dir):
+    return [
         file
         for file in receipts_dir.iterdir()
         if file.is_file()
@@ -622,10 +608,30 @@ def upload_all_receipts(page, receipts_dir=None):
         and file.suffix.lower() in ALLOWED_EXTENSIONS
     ]
 
+
+def upload_all_receipts(page, receipts_dir=None):
+    if receipts_dir is None:
+        ensure_ai_acknowledgement()
+        receipts_dir = get_receipts_dir()
+
+    print(f"Kuittikansio: {receipts_dir}")
+
+    receipts = find_receipts(receipts_dir)
+
     if not receipts:
-        print("Valitusta kansiosta ei löytynyt tuettuja kuittitiedostoja.")
-        print("Lisää kansioon PDF-, JPG-, JPEG- tai PNG-kuitti ja käynnistä CheckApp uudelleen.")
-        return
+        raise RuntimeError(
+            "Valitusta kuittikansiosta ei löytynyt PDF-, JPG-, JPEG- tai PNG-kuitteja. "
+            "Lisää kuitit kansioon tai valitse toinen kuittikansio."
+        )
+
+    confirm_receipt_processing_start(page)
+
+    print()
+    print("=" * 60)
+    print("Kuittien käsittely alkaa")
+    print("=" * 60)
+    print("Seuraavaksi CheckApp käyttää valittua kuittikansiota tai kysyy uuden kansion polun.")
+    print(f"Kuittikansio: {receipts_dir}")
 
     print(f"Löytyi kuittitiedostoja: {len(receipts)}")
 

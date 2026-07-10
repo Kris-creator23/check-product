@@ -1,4 +1,3 @@
-import json
 import subprocess
 
 from check_auth import require_active_subscription
@@ -8,15 +7,13 @@ from fennoa import upload_all_receipts
 
 
 def show_dialog(message, title="CheckApp"):
-    message_literal = json.dumps(message)
-    title_literal = json.dumps(title)
-    script = (
-        f'display dialog {message_literal} '
-        f'buttons {{"OK"}} default button "OK" '
-        f'with title {title_literal} with icon note'
-    )
+    script = '''
+on run argv
+  display dialog (item 1 of argv) buttons {"OK"} default button "OK" with title (item 2 of argv) with icon note
+end run
+'''
     try:
-        subprocess.run(["osascript", "-e", script], check=False)
+        subprocess.run(["osascript", "-e", script, message, title], check=False)
     except Exception:
         print(message)
 
