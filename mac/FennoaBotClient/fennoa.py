@@ -4,7 +4,6 @@ import subprocess
 import time
 
 from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from receipt_parser import parse_receipt
 from client_settings import ensure_ai_acknowledgement, get_receipts_dir
@@ -391,10 +390,7 @@ def open_purchases(page):
         print("CheckApp ei löytänyt Fennoan Ostot-linkkiä automaattisesti.")
         input("Avaa Fennoassa Ostot-näkymä ja jatka painamalla ENTER...")
 
-    try:
-        page.wait_for_load_state("domcontentloaded", timeout=5000)
-    except PlaywrightTimeoutError:
-        pass
+    page.wait_for_timeout(200)
 
 
 def open_new_receipt(page):
@@ -426,10 +422,7 @@ def open_new_receipt(page):
         print("CheckApp ei löytänyt Fennoan Uusi kuitti -painiketta automaattisesti.")
         wait_for_manual_new_receipt_view(page)
 
-    try:
-        page.wait_for_load_state("domcontentloaded", timeout=5000)
-    except PlaywrightTimeoutError:
-        pass
+    page.wait_for_timeout(200)
 
 
 def vat_to_business_id(vat):
@@ -649,11 +642,6 @@ def upload_all_receipts(page, receipts_dir=None):
 
         try:
 
-            print("Recognition started.")
-            data = parse_receipt(receipt)
-            data = sanitize_receipt_data(data)
-            print("Recognition completed.")
-
             open_new_receipt(page)
 
             page.locator(
@@ -661,6 +649,11 @@ def upload_all_receipts(page, receipts_dir=None):
             ).set_input_files(str(receipt))
 
             print("✅ Kuitti ladattu Fennoaan.")
+
+            print("Recognition started.")
+            data = parse_receipt(receipt)
+            data = sanitize_receipt_data(data)
+            print("Recognition completed.")
 
             page.wait_for_selector(
                 "#PurchaseInvoiceSupplierName",
