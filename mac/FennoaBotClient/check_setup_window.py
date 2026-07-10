@@ -4,6 +4,7 @@ import sys
 import time
 from pathlib import Path
 
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 
@@ -250,12 +251,24 @@ def run_receipt_setup_window(saved_path="", acknowledged=False):
             if page.is_closed():
                 raise RuntimeError("CheckApp-valmistelu peruttiin.")
 
-            action = page.evaluate("window.checkappAction || null")
+            try:
+                action = page.evaluate("window.checkappAction || null")
+            except PlaywrightError as error:
+                if "Target page, context or browser has been closed" in str(error):
+                    raise RuntimeError("CheckApp-valmisteluikkuna suljettiin.")
+                raise
+
             if not action:
                 time.sleep(0.15)
                 continue
 
-            page.evaluate("window.checkappAction = null")
+            try:
+                page.evaluate("window.checkappAction = null")
+            except PlaywrightError as error:
+                if "Target page, context or browser has been closed" in str(error):
+                    raise RuntimeError("CheckApp-valmisteluikkuna suljettiin.")
+                raise
+
             action_type = action.get("type")
 
             if action_type == "choose-folder":

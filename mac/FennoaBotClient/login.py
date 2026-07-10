@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 
@@ -36,6 +37,13 @@ def wait_until_inside_fennoa(page):
             timeout=300000,
         )
         return
+    except PlaywrightError as error:
+        if "Target page, context or browser has been closed" in str(error):
+            raise RuntimeError(
+                "Fennoa-ikkuna suljettiin ennen kuin CheckApp ehti aloittaa kuittien viennin. "
+                "Käynnistä CheckApp uudelleen ja pidä Fennoa-ikkuna auki."
+            )
+        raise
     except PlaywrightTimeoutError:
         print()
         print("CheckApp ei tunnistanut Fennoan kirjautumisen valmistumista automaattisesti.")

@@ -68,6 +68,11 @@ def wait_with_floating_start_button(
 ):
     print(console_text)
 
+    if page.is_closed():
+        raise RuntimeError(
+            "Fennoa-ikkuna suljettiin. Käynnistä CheckApp uudelleen ja pidä Fennoa-ikkuna auki käsittelyn ajan."
+        )
+
     script = """
     (buttonText) => {
       if (window.__checkAppStartReceipts === undefined) {
@@ -135,6 +140,10 @@ def wait_with_floating_start_button(
     try:
         page.evaluate("() => { window.__checkAppStartReceipts = false; }")
         while True:
+            if page.is_closed():
+                raise RuntimeError(
+                    "Fennoa-ikkuna suljettiin. Käynnistä CheckApp uudelleen ja pidä Fennoa-ikkuna auki käsittelyn ajan."
+                )
             try:
                 page.evaluate(script, button_text)
                 if page.evaluate("() => window.__checkAppStartReceipts === true"):
@@ -362,6 +371,11 @@ def click_by_visible_text_poll(page, text, timeout=4000, interval=250):
 
 
 def open_purchases(page):
+    if page.is_closed():
+        raise RuntimeError(
+            "Fennoa-ikkuna suljettiin ennen Ostot-näkymän avaamista. Käynnistä CheckApp uudelleen."
+        )
+
     opened = click_first_available(
         page,
         [
@@ -384,6 +398,11 @@ def open_purchases(page):
 
 
 def open_new_receipt(page):
+    if page.is_closed():
+        raise RuntimeError(
+            "Fennoa-ikkuna suljettiin ennen uuden kuitin avaamista. Käynnistä CheckApp uudelleen."
+        )
+
     opened = click_by_visible_text(page, "Uusi kuitti")
 
     if not opened:
