@@ -153,6 +153,7 @@ export default function DashboardPage() {
   }
 
   const hasStripeSubscription = Boolean(profile?.subscription_status && ["active", "trialing", "past_due", "unpaid", "paused"].includes(profile.subscription_status));
+  const trialAlreadyUsed = Boolean(profile?.trial_started_at);
   const trialEndLabel = profile?.trial_ends_at
     ? new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(profile.trial_ends_at))
     : "Ei aloitettu";
@@ -267,7 +268,9 @@ export default function DashboardPage() {
                 Avaa sovellus tarvittaessa Finderissa: ctrl-klikkaa CheckAppia, valitse Avaa ja vahvista Avaa.
               </p>
               <div className="actions">
-                <button className="button primary" onClick={checkout} disabled={!b2bAccepted}>Aloita 7 päivän kokeilu</button>
+                <button className="button primary" onClick={checkout} disabled={!b2bAccepted}>
+                  {trialAlreadyUsed ? "Jatka maksulliseen tilaukseen" : "Aloita 7 päivän kokeilu"}
+                </button>
                 <button className="button secondary" onClick={portal} disabled={!hasStripeSubscription}>Hallinnoi tilausta</button>
               </div>
               {!hasStripeSubscription && <p className="helperText">Tilauksen hallinta avautuu, kun maksutapa on lisätty Stripe Checkoutissa.</p>}
