@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [b2bAccepted, setB2bAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const [savingCompany, setSavingCompany] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -96,28 +97,24 @@ export default function DashboardPage() {
     return company;
   }
 
-  async function startTrial() {
+  async function saveCompany() {
     const sessionToken = await token();
     if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
     const company = validateCompany();
     if (!company) return;
-    if (!b2bAccepted) {
-      return setMessage("Vahvista ensin, että käytät CheckAppia yrityksenä tai organisaation edustajana.");
-    }
 
-    const response = await fetch("/api/start-trial", {
-      method: "POST",
+    setSavingCompany(true);
+    setMessage("");
+    const response = await fetch("/api/me", {
+      method: "PATCH",
       headers: { "content-type": "application/json", authorization: `Bearer ${sessionToken}` },
-      body: JSON.stringify({ plan, ...company })
+      body: JSON.stringify(company)
     });
     const data = await response.json();
-    if (response.status === 409 && data.requiresPayment) {
-      setMessage(data.error);
-      return;
-    }
-    if (!response.ok) return setMessage(data.error ?? "Kokeilun aloitus epäonnistui.");
-    window.localStorage.removeItem("checkappCompanyDraft");
-    window.location.href = data.downloadUrl;
+    setSavingCompany(false);
+    if (!response.ok) return setMessage(data.error ?? "Yritystietojen tallennus epäonnistui.");
+    setProfile(data.profile);
+    setMessage("Yritystiedot tallennettu.");
   }
 
   async function checkout() {
@@ -154,6 +151,11 @@ export default function DashboardPage() {
     }
     window.location.href = data.url;
   }
+
+  const hasStripeSubscription = Boolean(profile?.subscription_status && ["active", "trialing", "past_due", "unpaid", "paused"].includes(profile.subscription_status));
+  const trialEndLabel = profile?.trial_ends_at
+    ? new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(profile.trial_ends_at))
+    : "Ei aloitettu";
 
   async function requestInvoice() {
     const sessionToken = await token();
@@ -214,7 +216,7 @@ export default function DashboardPage() {
                 <div><b>Paketti</b><span>{profile?.selected_plan ? plans[profile.selected_plan].name : plans[plan].name}</span></div>
                 <div><b>Tila</b><span>{profile?.subscription_status ?? "trial / ei maksutapaa"}</span></div>
                 <div><b>Kuitit</b><span>{profile?.receipts_used ?? 0} / {plans[profile?.selected_plan ?? plan].quota}</span></div>
-                <div><b>Trial päättyy</b><span>{profile?.trial_ends_at ? new Date(profile.trial_ends_at).toLocaleDateString("fi-FI") : "Ei aloitettu"}</span></div>
+                <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div><b>Maksullinen käyttö päättyy</b><span>{profile?.current_period_end ? new Date(profile.current_period_end).toLocaleDateString("fi-FI") : "Ei aktiivista maksukautta"}</span></div>
               </div>
               <label>
@@ -240,6 +242,11 @@ export default function DashboardPage() {
                   <input value={vatId} onChange={(event) => setVatId(event.target.value)} placeholder="FI12345678" />
                 </label>
               </div>
+              <div className="actions">
+                <button className="button secondary" onClick={saveCompany} disabled={savingCompany || !companyName || !businessId}>
+                  {savingCompany ? "Tallennetaan..." : "Tallenna yritystiedot"}
+                </button>
+              </div>
               <p className="helperText">
                 Maksuton kokeilu on yrityskohtainen. Jos sama Y-tunnus on jo käyttänyt kokeilun, tilaus alkaa maksullisena heti Stripe Checkoutissa.
               </p>
@@ -252,19 +259,18 @@ export default function DashboardPage() {
                 <span>Vahvistan, että käytän CheckAppia yrityksenä, yksityisenä elinkeinonharjoittajana tai organisaation edustajana, en kuluttajana yksityiseen käyttöön.</span>
               </label>
               <p className="helperText">
-                Ilman maksutietoja kokeilu ei muutu automaattisesti maksulliseksi. Jos lisäät maksutavan nyt,
-                tilaus jatkuu 7 päivän kokeilun jälkeen maksullisena, ellei sitä peruta ennen kokeilun päättymistä.
-                Tilausta voi hallita ja perua Stripe Customer Portalissa ilman sähköpostipyyntöä.
+                Maksutapa lisätään turvallisesti Stripe Checkoutissa. Uusi tilaus sisältää 7 päivän maksuttoman kokeilun
+                ja jatkuu sen jälkeen maksullisena, ellei sitä peruta ennen kokeilun päättymistä. Tilauksen voi perua milloin tahansa.
               </p>
               <p className="helperText">
                 Mac voi ensimmäisellä avauskerralla varoittaa, koska CheckApp ladataan verkkosivulta eikä App Storesta.
                 Avaa sovellus tarvittaessa Finderissa: ctrl-klikkaa CheckAppia, valitse Avaa ja vahvista Avaa.
               </p>
               <div className="actions">
-                <button className="button primary" onClick={startTrial} disabled={!b2bAccepted}>Lataa Mac-sovellus ilman maksutietoja</button>
-                <button className="button secondary" onClick={checkout} disabled={!b2bAccepted}>Lisää maksutapa nyt</button>
-                <button className="button secondary" onClick={portal}>Hallinnoi tilausta</button>
+                <button className="button primary" onClick={checkout} disabled={!b2bAccepted}>Aloita 7 päivän kokeilu</button>
+                <button className="button secondary" onClick={portal} disabled={!hasStripeSubscription}>Hallinnoi tilausta</button>
               </div>
+              {!hasStripeSubscription && <p className="helperText">Tilauksen hallinta avautuu, kun maksutapa on lisätty Stripe Checkoutissa.</p>}
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>
                 <p>Jos haluat maksaa laskulla, lähetä laskutuspyyntö. Kokeilu voi alkaa heti, ja laskutus sovitaan erikseen.</p>

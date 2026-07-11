@@ -115,9 +115,8 @@ export default function HomePage() {
             <h1>Kuitit Fennoaan ilman käsin tehtävää lataamista</h1>
             <p className="heroText">
               CheckApp hakee kuitit valitusta kansiosta, vie ne Fennoaan, täyttää
-              tarvittavat kentät ja tallentaa ne Fennoaan. Kokeilu alkaa ilman maksua,
-              ja maksuton kokeilu ilman maksutietoja ei muutu automaattisesti maksulliseksi
-              tilaukseksi.
+              tarvittavat kentät ja tallentaa ne Fennoaan. Saat 7 päivän maksuttoman
+              kokeilun, jonka jälkeen tilaus jatkuu maksullisena, ellei sitä peruta.
             </p>
             <div className="actions">
               <a className="button primary" href="#signup">Aloita 7 päivän kokeilu</a>
@@ -171,8 +170,9 @@ export default function HomePage() {
                 <ul>
                   <li>Enintään {item.quota} kuittia kuukaudessa</li>
                   <li>7 päivän maksuton kokeilu</li>
-                  <li>Ilman korttia kokeilu ei muutu maksulliseksi automaattisesti</li>
-                  <li>Kortilla tilaus jatkuu maksullisena kokeilun jälkeen, ellei sitä peruta ajoissa</li>
+                  <li>Maksutapa lisätään turvallisesti Stripessä</li>
+                  <li>Tilaus jatkuu maksullisena kokeilun jälkeen, ellei sitä peruta</li>
+                  <li>Voit perua tilauksen milloin tahansa</li>
                   <li>Apple Pay ja korttimaksut Stripen kautta</li>
                   <li>Yrityslasku pyynnöstä</li>
                 </ul>
@@ -187,10 +187,9 @@ export default function HomePage() {
             <p className="eyebrow">Rekisteröinti</p>
             <h2>Aloita kokeilu ja lataa Mac-sovellus</h2>
             <p>
-              Voit aloittaa ilman maksutietoja ja valita maksutavan myöhemmin. Ilman
-              maksutietoja kokeilu ei muutu automaattisesti maksulliseksi. Jos lisäät
-              maksutavan heti, tilaus jatkuu 7 päivän kokeilun jälkeen maksullisena,
-              ellei sitä peruta ennen kokeilun päättymistä.
+              Lisää maksutapa turvallisesti Stripe Checkoutissa. Ensimmäiset 7 päivää
+              ovat maksuttomat. Sen jälkeen tilaus jatkuu maksullisena, ellei sitä
+              peruta ennen kokeilun päättymistä. Voit perua tilauksen milloin tahansa.
             </p>
           </div>
           <div className="signupBox">
@@ -261,7 +260,7 @@ export default function HomePage() {
         <section className="section faq" id="faq">
           <p className="eyebrow">FAQ</p>
           <h2>Usein kysytyt kysymykset</h2>
-          <details><summary>Tarvitaanko maksutiedot kokeilun alussa?</summary><p>Ei. Käyttäjä voi kokeilla 7 päivää ilman maksutietoja tai lisätä maksutavan heti.</p></details>
+          <details><summary>Tarvitaanko maksutiedot kokeilun alussa?</summary><p>Kyllä. Maksutapa lisätään Stripe Checkoutissa, mutta ensimmäiset 7 päivää ovat maksuttomat. Tilauksen voi perua milloin tahansa.</p></details>
           <details><summary>Mitä maksutapoja tuetaan?</summary><p>Stripe tukee korttimaksuja ja Apple Payta. MobilePay sopii kertamaksuihin, mutta jatkuvat tilaukset kannattaa hoitaa kortilla tai Apple Paylla. Yrityslasku käsitellään erikseen.</p></details>
           <details><summary>Onko CheckApp Fennoan virallinen sovellus?</summary><p>Ei. CheckApp on ART-HAUSin tarjoama itsenäinen työkalu Fennoa-käyttäjille.</p></details>
         </section>

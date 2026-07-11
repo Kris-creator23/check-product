@@ -6,8 +6,8 @@ This is the product version of the Check website: landing page, account area, tr
 
 - Finnish product website
 - Signup and login with email/password and Google via Supabase
-- 7-day trial without payment details
-- Optional Stripe Checkout with 7-day free trial and payment method collected immediately
+- Stripe Checkout with a payment method collected before the 7-day free trial
+- Automatic paid subscription after the trial unless cancelled
 - Plans: Basic 50 receipts/month, Pro 100 receipts/month, Premium 500 receipts/month
 - Customer dashboard
 - Download endpoint for the Mac app

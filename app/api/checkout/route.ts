@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await auth.supabase
     .from("profiles")
-    .select("stripe_customer_id, company_name, business_id, business_id_normalized, vat_id")
+    .select("stripe_customer_id, company_name, business_id, business_id_normalized, vat_id, trial_started_at")
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     .limit(1);
 
   if (trialLookupError) return NextResponse.json({ error: trialLookupError.message }, { status: 500 });
-  const companyHasUsedTrial = Boolean(existingCompanyTrials?.length);
+  const companyHasUsedTrial = Boolean(profile?.trial_started_at || existingCompanyTrials?.length);
 
   let customerId = profile?.stripe_customer_id;
   if (!customerId) {
