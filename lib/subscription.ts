@@ -61,7 +61,23 @@ export async function recoverStripeProfile(
       .sort((a, b) => b.created - a.created)[0];
     customerId = customer?.id ?? null;
   }
-  if (!customerId) return profile;
+  if (!customerId) {
+    if (!ignoreStoredCustomer) return profile;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({
+        stripe_customer_id: null,
+        stripe_subscription_id: null,
+        subscription_status: null,
+        current_period_end: null
+      })
+      .eq("user_id", profile.user_id)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
 
   const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
   const priority = new Map([["active", 4], ["trialing", 3], ["past_due", 2], ["unpaid", 1]]);
