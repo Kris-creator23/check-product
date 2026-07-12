@@ -16,7 +16,7 @@ ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
 
 def wait_for_user_receipt_confirmation():
     script = '''
-set dialogResult to display dialog "Tarkista ja tallenna kuitti Fennoassa. Kun kuitti on tallennettu, jatka seuraavaan kuittiin valitsemalla OK." buttons {"Keskeytä", "OK"} default button "OK" with title "CheckApp" with icon note
+set dialogResult to display dialog "Tarkista tallennetut tiedot ennen jatkamista" buttons {"OK"} default button "OK" with title "CheckApp"
 button returned of dialogResult
 '''
 
@@ -31,10 +31,7 @@ button returned of dialogResult
     except subprocess.CalledProcessError:
         return False
     except FileNotFoundError:
-        input(
-            "Kun olet tarkistanut ja tallentanut tämän kuitin Fennoassa, "
-            "jatka seuraavaan kuittiin painamalla ENTER..."
-        )
+        input("Tarkista tallennetut tiedot ennen jatkamista. Paina sitten ENTER...")
         return True
 
 
@@ -162,10 +159,10 @@ def wait_with_floating_start_button(
 def wait_for_manual_receipt_completion(page):
     wait_with_floating_start_button(
         page,
-        button_text="Jatka tallennetun kuitin jälkeen",
+        button_text="Tiedot tarkistettu – jatka",
         console_text=(
-            "CheckApp on tauolla. Korjaa ja tallenna nykyinen kuitti Fennoassa. "
-            "Jatka vihreästä painikkeesta tallennuksen jälkeen."
+            "CheckApp on tauolla. Tarkista ja tallenna nykyinen kuitti Fennoassa. "
+            "Kun kaikki tiedot ovat oikein, jatka vihreästä painikkeesta."
         ),
     )
 
@@ -185,6 +182,11 @@ def normalize_finnish_date(value):
     if not value:
         return ""
 
+    iso_match = re.fullmatch(r"\s*(\d{4})-(\d{1,2})-(\d{1,2})\s*", str(value))
+    if iso_match:
+        year, month, day = iso_match.groups()
+        return f"{int(day):02d}.{int(month):02d}.{year}"
+
     match = re.search(r"(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})", str(value))
     if not match:
         return ""
@@ -193,7 +195,7 @@ def normalize_finnish_date(value):
     if len(year) == 2:
         year = f"20{year}"
 
-    return f"{int(day)}.{int(month)}.{year}"
+    return f"{int(day):02d}.{int(month):02d}.{year}"
 
 
 def looks_like_date(value):
@@ -503,50 +505,63 @@ def set_field_value(page, selectors, value):
     return False
 
 
+def _fill_date_field(candidates, date_value):
+    for candidate in candidates:
+        try:
+            locator = candidate()
+            count = min(locator.count(), 4)
+            for index in range(count):
+                field = locator.nth(index)
+                if not field.is_visible() or not field.is_enabled():
+                    continue
+
+                input_type = (field.get_attribute("type") or "").lower()
+                value = date_value
+                if input_type == "date":
+                    day, month, year = date_value.split(".")
+                    value = f"{year}-{month}-{day}"
+
+                field.click()
+                field.fill(value)
+                field.press("Tab")
+                stored_value = field.input_value()
+                if normalize_finnish_date(stored_value) == normalize_finnish_date(date_value):
+                    return True
+        except Exception:
+            continue
+    return False
+
+
 def set_dates(page, purchase_date):
     if not purchase_date:
-        return
+        print("⚠️ Kuitin päivämäärää ei tunnistettu. Tarkista Ostopäivä ja Tositepäivä käsin.")
+        return False
 
-    selectors = [
-        "#PurchaseInvoicePurchaseDate",
-        "#PurchaseInvoiceReceiptDate",
-        "#PurchaseInvoiceDate",
-        "#PurchaseInvoiceInvoiceDate",
-        "#PurchaseInvoiceEntryDate",
-        'input[name*="PurchaseDate"]',
-        'input[name*="ReceiptDate"]',
-        'input[name*="InvoiceDate"]',
-        'input[name*="EntryDate"]',
-        'input[id*="PurchaseDate"]',
-        'input[id*="ReceiptDate"]',
-        'input[id*="InvoiceDate"]',
-        'input[id*="EntryDate"]',
-    ]
+    purchase_date_set = _fill_date_field(
+        [
+            lambda: page.get_by_label("Ostopäivä", exact=True),
+            lambda: page.locator("#PurchaseInvoicePurchaseDate"),
+            lambda: page.locator('input[name*="PurchaseDate"]'),
+            lambda: page.locator('input[id*="PurchaseDate"]'),
+        ],
+        purchase_date,
+    )
+    receipt_date_set = _fill_date_field(
+        [
+            lambda: page.get_by_label("Tositepäivä", exact=True),
+            lambda: page.locator("#PurchaseInvoiceReceiptDate"),
+            lambda: page.locator("#PurchaseInvoiceDate"),
+            lambda: page.locator('input[name*="ReceiptDate"]'),
+            lambda: page.locator('input[id*="ReceiptDate"]'),
+        ],
+        purchase_date,
+    )
 
-    try:
-        page.evaluate(
-            """({ dateValue, selectors }) => {
-                const seen = new Set();
-                const fillInput = (input) => {
-                    if (!input || input.disabled || input.readOnly) return;
-                    if (seen.has(input)) return;
-                    seen.add(input);
-                    input.focus();
-                    input.value = dateValue;
-                    input.dispatchEvent(new Event("input", { bubbles: true }));
-                    input.dispatchEvent(new Event("change", { bubbles: true }));
-                    input.dispatchEvent(new Event("blur", { bubbles: true }));
-                };
-
-                for (const selector of selectors) {
-                    document.querySelectorAll(selector).forEach(fillInput);
-                }
-            }""",
-            {"dateValue": purchase_date, "selectors": selectors},
-        )
-    except Exception:
-        for selector in selectors:
-            set_field_value(page, [selector], purchase_date)
+    if not purchase_date_set:
+        print("⚠️ Ostopäivä-kenttää ei voitu päivittää automaattisesti.")
+    if not receipt_date_set:
+        print("⚠️ Tositepäivä-kenttää ei voitu päivittää automaattisesti.")
+    return purchase_date_set and receipt_date_set
 
 
 def fill_accounting_description(page, description):
@@ -727,7 +742,11 @@ def upload_all_receipts(page, receipts_dir=None):
             ).fill(description)
 
             # Dates
-            purchase_date = normalize_finnish_date(data.get("invoice_date")) or normalize_finnish_date(data.get("entry_date"))
+            purchase_date = (
+                normalize_finnish_date(data.get("receipt_date"))
+                or normalize_finnish_date(data.get("invoice_date"))
+                or normalize_finnish_date(data.get("entry_date"))
+            )
             set_dates(page, purchase_date)
 
             # Totals
@@ -754,24 +773,11 @@ def upload_all_receipts(page, receipts_dir=None):
 
             page.wait_for_timeout(1000)
 
-            page.get_by_role(
-                "link",
-                name=" Tallenna"
-            ).click()
-
-            page.wait_for_timeout(3000)
-
-            print(
-                "CheckApp tallensi kuitin perustiedot Fennoaan. "
-                "Täydennä Fennoassa tarvittavat vientirivit ja tallenna tosite."
-            )
             receipt_confirmed = wait_for_user_receipt_confirmation()
             if not receipt_confirmed:
-                print(
-                    "Automaattinen käsittely keskeytettiin nykyisen kuitin kohdalla. "
-                    "Tee tarvittavat korjaukset ja tallenna kuitti Fennoassa."
-                )
-                wait_for_manual_receipt_completion(page)
+                raise KeyboardInterrupt
+
+            wait_for_manual_receipt_completion(page)
 
             move(
                 str(receipt),

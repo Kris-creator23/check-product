@@ -1,19 +1,29 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../lib/auth";
 import { plans, type PlanId } from "../../../lib/plans";
+import { syncStripeSubscriptionProfile } from "../../../lib/subscription";
 
 export async function GET(request: Request) {
   const auth = await requireUser(request);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const { data: profile, error } = await auth.supabase
+  const { data: storedProfile, error } = await auth.supabase
     .from("profiles")
     .select("*")
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!profile) return NextResponse.json({ active: false, reason: "no_profile" });
+  if (!storedProfile) return NextResponse.json({ active: false, reason: "no_profile" });
+
+  let profile = storedProfile;
+  if (profile.stripe_subscription_id) {
+    try {
+      profile = await syncStripeSubscriptionProfile(auth.supabase, profile);
+    } catch (syncError) {
+      console.error("Stripe license sync failed", syncError);
+    }
+  }
 
   const selectedPlan = profile.selected_plan as PlanId | null;
   const plan = selectedPlan ? plans[selectedPlan] : null;

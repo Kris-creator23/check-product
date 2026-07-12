@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminSupabase } from "../../../../lib/supabase";
 import { getStripe } from "../../../../lib/stripe";
+import { subscriptionPeriodEnd } from "../../../../lib/subscription";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,13 +43,14 @@ export async function POST(request: Request) {
         current_period_end?: number;
         trial_end?: number | null;
       };
+      const periodEnd = subscriptionPeriodEnd(subscription as any);
       const { error } = await supabase.from("profiles").upsert({
         user_id: userId,
         selected_plan: plan,
         stripe_customer_id: String(session.customer),
         stripe_subscription_id: subscriptionId,
         subscription_status: subscription.status,
-        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
         trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
         ...(subscription.trial_end ? { trial_started_at: new Date().toISOString() } : {})
       }, { onConflict: "user_id" });
@@ -62,14 +64,20 @@ export async function POST(request: Request) {
     const plan = subscription.metadata.plan;
 
     if (userId) {
-      const { error } = await supabase.from("profiles").upsert({
+      const periodEnd = subscriptionPeriodEnd(subscription as any);
+      const patch: Record<string, unknown> = {
         user_id: userId,
         selected_plan: plan,
         stripe_customer_id: String(subscription.customer),
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
-        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
-        trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
+        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null
+      };
+      if (subscription.trial_end) {
+        patch.trial_ends_at = new Date(subscription.trial_end * 1000).toISOString();
+      }
+      const { error } = await supabase.from("profiles").upsert({
+        ...patch
       }, { onConflict: "user_id" });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     }

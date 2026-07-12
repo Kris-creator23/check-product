@@ -1,9 +1,11 @@
 import subprocess
+import sys
 
 from check_auth import require_active_subscription
 from client_settings import ensure_receipt_setup
-from login import login
+from login import configure_playwright_browsers, login
 from fennoa import upload_all_receipts
+from playwright.sync_api import sync_playwright
 
 
 def show_dialog(message, title="CheckApp"):
@@ -35,9 +37,30 @@ def main():
         show_dialog("Valmis. Kuittien käsittely on päättynyt.")
 
 
+def run_playwright_self_test():
+    """Launch the bundled driver and browser before a release is published."""
+    configure_playwright_browsers()
+    playwright = sync_playwright().start()
+    browser = None
+    try:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.set_content("<title>CheckApp Playwright OK</title>")
+        if page.title() != "CheckApp Playwright OK":
+            raise RuntimeError("Playwright smoke test returned an unexpected page title.")
+        print("PLAYWRIGHT_SELF_TEST_OK")
+    finally:
+        if browser:
+            browser.close()
+        playwright.stop()
+
+
 if __name__ == "__main__":
     try:
-        main()
+        if "--self-test-playwright" in sys.argv:
+            run_playwright_self_test()
+        else:
+            main()
     except KeyboardInterrupt:
         print("\nKeskeytetty.")
     except Exception as error:

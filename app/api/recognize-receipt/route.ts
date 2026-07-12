@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../lib/auth";
 import { getPlan, type PlanId } from "../../../lib/plans";
+import { syncStripeSubscriptionProfile } from "../../../lib/subscription";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -29,6 +30,7 @@ const receiptSchema = {
     business_id: { type: "string" },
     vat_number: { type: "string" },
     invoice_number: { type: "string" },
+    receipt_date: { type: "string" },
     invoice_date: { type: "string" },
     entry_date: { type: "string" },
     due_date: { type: "string" },
@@ -45,6 +47,7 @@ const receiptSchema = {
     "business_id",
     "vat_number",
     "invoice_number",
+    "receipt_date",
     "invoice_date",
     "entry_date",
     "due_date",
@@ -100,6 +103,7 @@ function normalizeReceiptData(value: unknown) {
     business_id: normalizeString(data.business_id),
     vat_number: normalizeString(data.vat_number),
     invoice_number: normalizeString(data.invoice_number),
+    receipt_date: normalizeString(data.receipt_date),
     invoice_date: normalizeString(data.invoice_date),
     entry_date: normalizeString(data.entry_date),
     due_date: normalizeString(data.due_date),
@@ -144,14 +148,23 @@ export async function POST(request: Request) {
     return safeError("recognition rate limit reached, try again in a minute", 429);
   }
 
-  const { data: profile, error: profileError } = await auth.supabase
+  const { data: storedProfile, error: profileError } = await auth.supabase
     .from("profiles")
-    .select("selected_plan, trial_ends_at, subscription_status, receipts_used")
+    .select("user_id, selected_plan, trial_ends_at, subscription_status, receipts_used, stripe_subscription_id, stripe_customer_id, current_period_end")
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
   if (profileError) return safeError("subscription lookup failed", 503);
-  if (!profile) return safeError("subscription inactive", 403);
+  if (!storedProfile) return safeError("subscription inactive", 403);
+
+  let profile = storedProfile;
+  if (profile.stripe_subscription_id) {
+    try {
+      profile = await syncStripeSubscriptionProfile(auth.supabase, profile);
+    } catch (syncError) {
+      console.error("Stripe recognition sync failed", syncError);
+    }
+  }
 
   const selectedPlan = profile.selected_plan as PlanId | null;
   const plan = selectedPlan ? getPlan(selectedPlan) : null;
@@ -200,7 +213,7 @@ Read the receipt or invoice image and return only structured data.
 Use empty strings for missing text values and 0 for missing numeric values.
 Never copy the receipt date into supplier_name, vat_number, business_id, invoice_number, expense_type or note. If a field is not clearly visible, return an empty string for that field.
 Dates must use D.M.YYYY format when visible. If a receipt date is printed as DD.MM.YY, convert it to D.M.20YY.
-invoice_date and entry_date must be the actual purchase/receipt date from the receipt, not today's date.
+receipt_date must be the primary actual purchase date visibly printed on the receipt. invoice_date and entry_date must use that same actual purchase/receipt date, not today's date.
 If the receipt date is not clearly visible, use an empty string. Never infer or use the current date.
 country must be the supplier country in English, for example "Finland" or "Estonia", not "Suomi". Do not assume Finland for foreign receipts.
 vat_number must be an actual VAT number such as FI12345678 or EE123456789. business_id must be a Finnish Y-tunnus only; for foreign suppliers use an empty string.
