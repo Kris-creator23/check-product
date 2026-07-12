@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [signingOut, setSigningOut] = useState(false);
   const [savingCompany, setSavingCompany] = useState(false);
   const [editingCompany, setEditingCompany] = useState(false);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
   const checkoutStarted = useRef(false);
 
   function saveCompanyDraft(values = { companyName, businessId, vatId }) {
@@ -101,6 +102,7 @@ export default function DashboardPage() {
       return;
     }
     setProfile(data.profile ?? null);
+    setHasPaymentMethod(Boolean(data.hasPaymentMethod));
     setUserEmail(data.user?.email ?? "");
     if (data.profile?.selected_plan) setPlan(data.profile.selected_plan);
     const metadata = data.user?.metadata ?? {};
@@ -198,12 +200,12 @@ export default function DashboardPage() {
 
   const hasCurrentSubscription = Boolean(profile?.stripe_subscription_id && profile?.subscription_status && !["canceled", "incomplete_expired"].includes(profile.subscription_status));
   const trialAlreadyUsed = Boolean(profile?.trial_started_at);
+  const receiptQuota = plans[profile?.selected_plan ?? plan].quota;
+  const receiptsUsed = profile?.receipts_used ?? 0;
+  const receiptsRemaining = Math.max(0, receiptQuota - receiptsUsed);
   const trialEndLabel = profile?.trial_ends_at
     ? new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(profile.trial_ends_at))
     : "Ei aloitettu";
-  const currentPeriodEndLabel = profile?.current_period_end
-    ? new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(profile.current_period_end))
-    : "Ei aktiivista maksukautta";
   const statusLabel = profile?.subscription_status === "trialing"
     ? "Maksuton kokeilu"
     : profile?.subscription_status === "active"
@@ -291,9 +293,18 @@ export default function DashboardPage() {
                 </div>
                 <div><b>Paketti</b><span>{profile?.selected_plan ? plans[profile.selected_plan].name : plans[plan].name}</span></div>
                 <div><b>Tila</b><span>{statusLabel}</span></div>
-                <div><b>Kuitit</b><span>{profile?.receipts_used ?? 0} / {plans[profile?.selected_plan ?? plan].quota}</span></div>
+                <div>
+                  <b>Kuitit</b>
+                  <span>Käytetty {receiptsUsed} / {receiptQuota}</span>
+                  <small>Jäljellä {receiptsRemaining} kuittia</small>
+                </div>
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
-                <div><b>{profile?.subscription_status === "trialing" ? "Ensimmäinen veloitus" : "Nykyinen maksukausi päättyy"}</b><span>{profile?.subscription_status === "trialing" ? trialEndLabel : currentPeriodEndLabel}</span></div>
+                <div className="accountActionCell">
+                  <b>Maksutapa</b>
+                  <button className="button secondary compactButton" onClick={profile?.stripe_customer_id ? portal : checkout}>
+                    Hallinnoi maksutapaa
+                  </button>
+                </div>
               </div>
               <div className="actions accountEditActions">
                 {editingCompany ? (
@@ -305,7 +316,15 @@ export default function DashboardPage() {
                     Muokkaa tiedot
                   </button>
                 )}
+                {hasPaymentMethod ? (
+                  <a className="button secondary" href="/api/download">Lataa CheckApp Macille</a>
+                ) : (
+                  <button className="button secondary" disabled title="Lisää ja tallenna maksutapa ensin Stripessä.">
+                    Lataa CheckApp Macille
+                  </button>
+                )}
               </div>
+              {!hasPaymentMethod && <p className="helperText">CheckAppin lataus aktivoituu, kun maksutapa on lisätty ja tallennettu Stripessä.</p>}
               <label>
                 Valitse paketti
                 <select value={plan} onChange={(event) => setPlan(event.target.value as PlanId)}>
@@ -333,8 +352,6 @@ export default function DashboardPage() {
                     {trialAlreadyUsed ? "Jatka maksulliseen tilaukseen" : "Aloita 7 päivän kokeilu"}
                   </button>
                 )}
-                <a className="button secondary" href="/api/download">Lataa CheckApp Macille</a>
-                <button className="button secondary" onClick={portal}>Hallinnoi tilausta</button>
               </div>
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>

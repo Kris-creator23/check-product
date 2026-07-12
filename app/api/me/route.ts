@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "../../../lib/auth";
 import { cleanCompanyInput, isValidFinnishBusinessId } from "../../../lib/company";
 import { recoverStripeProfile, syncStripeSubscriptionProfile } from "../../../lib/subscription";
+import { getStripe } from "../../../lib/stripe";
 
 const noStoreHeaders = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   let profile = storedProfile;
+  let hasPaymentMethod = false;
   if (profile) {
     try {
       profile = profile.stripe_subscription_id
@@ -26,10 +28,24 @@ export async function GET(request: Request) {
     } catch (syncError) {
       console.error("Stripe profile sync failed", syncError);
     }
+
+    if (profile?.stripe_customer_id) {
+      try {
+        const paymentMethods = await getStripe().paymentMethods.list({
+          customer: profile.stripe_customer_id,
+          type: "card",
+          limit: 1
+        });
+        hasPaymentMethod = paymentMethods.data.length > 0;
+      } catch (paymentMethodError) {
+        console.error("Stripe payment method lookup failed", paymentMethodError);
+      }
+    }
   }
 
   return NextResponse.json({
     profile,
+    hasPaymentMethod,
     user: {
       id: auth.user.id,
       email: auth.user.email,
