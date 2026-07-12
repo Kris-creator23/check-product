@@ -44,3 +44,45 @@ export async function syncStripeSubscriptionProfile(
   if (error) throw new Error(error.message);
   return data;
 }
+
+export async function recoverStripeProfile(
+  supabase: SupabaseClient,
+  profile: Record<string, any>,
+  email?: string | null
+) {
+  const stripe = getStripe();
+  let customerId = profile.stripe_customer_id as string | null;
+
+  if (!customerId && email) {
+    const customers = await stripe.customers.list({ email, limit: 10 });
+    const customer = customers.data
+      .filter((item) => !item.deleted)
+      .sort((a, b) => b.created - a.created)[0];
+    customerId = customer?.id ?? null;
+  }
+  if (!customerId) return profile;
+
+  const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
+  const priority = new Map([["active", 4], ["trialing", 3], ["past_due", 2], ["unpaid", 1]]);
+  const subscription = subscriptions.data.sort((a, b) => {
+    const statusDifference = (priority.get(b.status) ?? 0) - (priority.get(a.status) ?? 0);
+    return statusDifference || b.created - a.created;
+  })[0];
+
+  if (subscription) {
+    return syncStripeSubscriptionProfile(supabase, {
+      ...profile,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscription.id
+    });
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ stripe_customer_id: customerId })
+    .eq("user_id", profile.user_id)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}

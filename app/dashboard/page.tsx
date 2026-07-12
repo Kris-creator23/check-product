@@ -143,7 +143,7 @@ export default function DashboardPage() {
       method: "PATCH",
       headers: { "content-type": "application/json", authorization: `Bearer ${sessionToken}` },
       cache: "no-store",
-      body: JSON.stringify(company)
+      body: JSON.stringify({ ...company, email: userEmail })
     });
     const data = await response.json();
     setSavingCompany(false);
@@ -156,6 +156,7 @@ export default function DashboardPage() {
       return;
     }
     setProfile(data.profile);
+    setUserEmail(data.email ?? userEmail);
     setCompanyName(savedCompanyName);
     setBusinessId(savedBusinessId);
     setVatId(savedVatId);
@@ -195,7 +196,6 @@ export default function DashboardPage() {
     window.location.href = data.url;
   }
 
-  const hasStripeCustomer = Boolean(profile?.stripe_customer_id);
   const hasCurrentSubscription = Boolean(profile?.stripe_subscription_id && profile?.subscription_status && !["canceled", "incomplete_expired"].includes(profile.subscription_status));
   const trialAlreadyUsed = Boolean(profile?.trial_started_at);
   const trialEndLabel = profile?.trial_ends_at
@@ -265,14 +265,46 @@ export default function DashboardPage() {
           {loading ? <p>Ladataan...</p> : (
             <>
               <div className="accountGrid">
-                <div><b>Sähköposti</b><span>{userEmail || "Ei tiedossa"}</span></div>
-                <div><b>Yritys</b><span>{companyName || "Puuttuu"}</span></div>
-                <div><b>Y-tunnus</b><span>{businessId || "Puuttuu"}</span></div>
+                <div>
+                  <b>Sähköposti</b>
+                  {editingCompany
+                    ? <input type="email" value={userEmail} onChange={(event) => setUserEmail(event.target.value)} />
+                    : <span>{userEmail || "Ei tiedossa"}</span>}
+                </div>
+                <div>
+                  <b>Yritys</b>
+                  {editingCompany
+                    ? <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Yritys Oy" />
+                    : <span>{companyName || "Puuttuu"}</span>}
+                </div>
+                <div>
+                  <b>Y-tunnus</b>
+                  {editingCompany && !profile?.business_id
+                    ? <input value={businessId} onChange={(event) => setBusinessId(event.target.value)} placeholder="1234567-8" />
+                    : <input className="lockedAccountField" value={businessId} disabled title="Y-tunnusta ei voi muuttaa tallennuksen jälkeen." />}
+                </div>
+                <div>
+                  <b>ALV-tunnus</b>
+                  {editingCompany
+                    ? <input value={vatId} onChange={(event) => setVatId(event.target.value)} placeholder="FI12345678" />
+                    : <span>{vatId || "Ei ilmoitettu"}</span>}
+                </div>
                 <div><b>Paketti</b><span>{profile?.selected_plan ? plans[profile.selected_plan].name : plans[plan].name}</span></div>
                 <div><b>Tila</b><span>{statusLabel}</span></div>
                 <div><b>Kuitit</b><span>{profile?.receipts_used ?? 0} / {plans[profile?.selected_plan ?? plan].quota}</span></div>
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div><b>{profile?.subscription_status === "trialing" ? "Ensimmäinen veloitus" : "Nykyinen maksukausi päättyy"}</b><span>{profile?.subscription_status === "trialing" ? trialEndLabel : currentPeriodEndLabel}</span></div>
+              </div>
+              <div className="actions accountEditActions">
+                {editingCompany ? (
+                  <button className="button primary" onClick={saveCompany} disabled={savingCompany || !userEmail || !companyName || !businessId}>
+                    {savingCompany ? "Tallennetaan..." : "Tallenna"}
+                  </button>
+                ) : (
+                  <button className="button secondary" onClick={() => { setEditingCompany(true); setMessage(""); }}>
+                    Muokkaa tiedot
+                  </button>
+                )}
               </div>
               <label>
                 Valitse paketti
@@ -283,37 +315,6 @@ export default function DashboardPage() {
               <p className="helperText">
                 {plans[plan].name}: {plans[plan].price}/kk + ALV, {plans[plan].quota} kuittia/kk ja 7 päivän kokeilujakso.
               </p>
-              <div className="formGrid">
-                <label>
-                  Yrityksen nimi
-                  <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Yritys Oy" disabled={!editingCompany} />
-                </label>
-                <label>
-                  Y-tunnus
-                  <input
-                    value={businessId}
-                    onChange={(event) => setBusinessId(event.target.value)}
-                    placeholder="1234567-8"
-                    disabled={Boolean(profile?.business_id) || !editingCompany}
-                    title={profile?.business_id ? "Y-tunnusta ei voi muuttaa tallennuksen jälkeen." : undefined}
-                  />
-                </label>
-                <label>
-                  ALV-tunnus, jos käytössä
-                  <input value={vatId} onChange={(event) => setVatId(event.target.value)} placeholder="FI12345678" disabled={!editingCompany} />
-                </label>
-              </div>
-              <div className="actions">
-                {editingCompany ? (
-                  <button className="button primary" onClick={saveCompany} disabled={savingCompany || !companyName || !businessId}>
-                    {savingCompany ? "Tallennetaan..." : "Tallenna yritystiedot"}
-                  </button>
-                ) : (
-                  <button className="button secondary" onClick={() => { setEditingCompany(true); setMessage(""); }}>
-                    Muokkaa tiedot
-                  </button>
-                )}
-              </div>
               <p className="helperText">
                 Maksuton kokeilu on yrityskohtainen. Jos sama Y-tunnus on jo käyttänyt kokeilun, tilaus alkaa maksullisena heti Stripe Checkoutissa.
               </p>
@@ -333,21 +334,12 @@ export default function DashboardPage() {
                   </button>
                 )}
                 <a className="button secondary" href="/api/download">Lataa CheckApp Macille</a>
-                <button className="button secondary" onClick={portal} disabled={!hasStripeCustomer}>Hallinnoi tilausta</button>
+                <button className="button secondary" onClick={portal}>Hallinnoi tilausta</button>
               </div>
-              {!hasStripeCustomer && <p className="helperText">Tilauksen hallinta avautuu, kun maksutapa on lisätty Stripe Checkoutissa.</p>}
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>
                 <p>Jos haluat maksaa laskulla, lähetä laskutuspyyntö. Kokeilu voi alkaa heti, ja laskutus sovitaan erikseen.</p>
                 <div className="formGrid">
-                  <label>
-                    Yrityksen nimi
-                    <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Yritys Oy" />
-                  </label>
-                  <label>
-                    Y-tunnus
-                    <input value={businessId} onChange={(event) => setBusinessId(event.target.value)} placeholder="1234567-8" disabled={Boolean(profile?.business_id)} />
-                  </label>
                   <label>
                     Laskutussähköposti
                     <input value={invoiceEmail} onChange={(event) => setInvoiceEmail(event.target.value)} placeholder="billing@company.fi" type="email" />

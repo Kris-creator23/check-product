@@ -772,6 +772,22 @@ select {
   padding: 16px;
 }
 
+.accountGrid input {
+  width: 100%;
+  min-width: 0;
+}
+
+.lockedAccountField:disabled {
+  color: var(--muted);
+  background: #eef0ed;
+  border-color: var(--line);
+  opacity: 1;
+}
+
+.accountEditActions {
+  margin-top: -10px;
+}
+
 .legalPage {
   max-width: 860px;
   margin: 0 auto;

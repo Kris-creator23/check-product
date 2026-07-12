@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../lib/auth";
 import { cleanCompanyInput, isValidFinnishBusinessId } from "../../../lib/company";
-import { syncStripeSubscriptionProfile } from "../../../lib/subscription";
+import { recoverStripeProfile, syncStripeSubscriptionProfile } from "../../../lib/subscription";
 
 const noStoreHeaders = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 
@@ -18,9 +18,11 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   let profile = storedProfile;
-  if (profile?.stripe_subscription_id) {
+  if (profile) {
     try {
-      profile = await syncStripeSubscriptionProfile(auth.supabase, profile);
+      profile = profile.stripe_subscription_id
+        ? await syncStripeSubscriptionProfile(auth.supabase, profile)
+        : await recoverStripeProfile(auth.supabase, profile, auth.user.email);
     } catch (syncError) {
       console.error("Stripe profile sync failed", syncError);
     }
@@ -78,11 +80,31 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Tarkista Y-tunnus. Käytä muotoa 1234567-8." }, { status: 400 });
   }
 
+  const requestedEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (!requestedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+    return NextResponse.json({ error: "Tarkista sähköpostiosoite." }, { status: 400 });
+  }
+
+  const { error: authUpdateError } = await auth.supabase.auth.admin.updateUserById(auth.user.id, {
+    email: requestedEmail,
+    email_confirm: true,
+    user_metadata: {
+      ...auth.user.user_metadata,
+      company_name: company.companyName,
+      business_id: company.businessId,
+      business_id_normalized: company.businessIdNormalized,
+      vat_id: company.vatId
+    }
+  });
+  if (authUpdateError) {
+    return NextResponse.json({ error: authUpdateError.message }, { status: 400 });
+  }
+
   const { data: profile, error } = await auth.supabase
     .from("profiles")
     .upsert({
       user_id: auth.user.id,
-      email: auth.user.email,
+      email: requestedEmail,
       company_name: company.companyName,
       business_id: company.businessId,
       business_id_normalized: company.businessIdNormalized,
@@ -93,18 +115,5 @@ export async function PATCH(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { error: metadataError } = await auth.supabase.auth.admin.updateUserById(auth.user.id, {
-    user_metadata: {
-      ...auth.user.user_metadata,
-      company_name: company.companyName,
-      business_id: company.businessId,
-      business_id_normalized: company.businessIdNormalized,
-      vat_id: company.vatId
-    }
-  });
-  if (metadataError) {
-    console.error("Company metadata sync failed", metadataError);
-  }
-
-  return NextResponse.json({ profile }, { headers: noStoreHeaders });
+  return NextResponse.json({ profile, email: requestedEmail }, { headers: noStoreHeaders });
 }
