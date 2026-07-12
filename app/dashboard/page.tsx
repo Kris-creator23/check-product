@@ -302,7 +302,7 @@ export default function DashboardPage() {
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div className="accountActionCell">
                   <b>Maksutapa</b>
-                  <button className="button secondary compactButton" onClick={profile?.stripe_customer_id ? portal : checkout}>
+                  <button className="button secondary compactButton" onClick={hasPaymentMethod ? portal : checkout}>
                     Hallinnoi maksutapaa
                   </button>
                 </div>
