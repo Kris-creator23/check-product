@@ -25,13 +25,36 @@ export async function POST(request: Request) {
   }
   if (!profile?.stripe_customer_id) {
     return NextResponse.json({
-      error: `Maksutapaa ei ole vielä lisätty. Jos tarvitset apua, ota yhteyttä: ${siteContent.supportEmail}.`
-    }, { status: 400 });
+      error: `Maksutapaa ei ole vielä lisätty. Jos tarvitset apua, ota yhteyttä: ${siteContent.supportEmail}.`,
+      requiresCheckout: true
+    }, { status: 409 });
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const session = await getStripe().billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
+  const stripe = getStripe();
+  let customerId = profile.stripe_customer_id;
+  try {
+    await stripe.customers.retrieve(customerId);
+  } catch (customerError) {
+    console.error("Stored Stripe customer is not available in the current mode", customerError);
+    try {
+      profile = await recoverStripeProfile(auth.supabase, profile, auth.user.email, true);
+      customerId = profile?.stripe_customer_id;
+    } catch (recoveryError) {
+      console.error("Live Stripe customer recovery failed", recoveryError);
+      customerId = null;
+    }
+  }
+
+  if (!customerId) {
+    return NextResponse.json({
+      error: "Lisää maksutapa ensin Stripe Checkoutissa.",
+      requiresCheckout: true
+    }, { status: 409 });
+  }
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
     return_url: `${siteUrl}/dashboard`
   });
 

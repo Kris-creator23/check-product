@@ -56,6 +56,14 @@ export async function POST(request: Request) {
   }).format(new Date(trialEnd * 1000));
 
   let customerId = profile?.stripe_customer_id;
+  if (customerId) {
+    try {
+      await stripe.customers.retrieve(customerId);
+    } catch (customerError) {
+      console.error("Stored Stripe customer is not available in the current mode", customerError);
+      customerId = null;
+    }
+  }
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: auth.user.email,

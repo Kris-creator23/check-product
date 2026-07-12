@@ -193,6 +193,7 @@ export default function DashboardPage() {
     });
     const data = await response.json();
     if (!response.ok) {
+      if (data.requiresCheckout) return checkout();
       return setMessage(data.error ?? `Asiakasportaalin avaaminen epäonnistui. Ota yhteyttä: ${siteContent.supportEmail}.`);
     }
     window.location.href = data.url;

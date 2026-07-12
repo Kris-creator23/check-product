@@ -48,10 +48,11 @@ export async function syncStripeSubscriptionProfile(
 export async function recoverStripeProfile(
   supabase: SupabaseClient,
   profile: Record<string, any>,
-  email?: string | null
+  email?: string | null,
+  ignoreStoredCustomer = false
 ) {
   const stripe = getStripe();
-  let customerId = profile.stripe_customer_id as string | null;
+  let customerId = ignoreStoredCustomer ? null : profile.stripe_customer_id as string | null;
 
   if (!customerId && email) {
     const customers = await stripe.customers.list({ email, limit: 10 });
