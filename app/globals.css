@@ -792,6 +792,11 @@ select {
   padding: 9px 12px;
 }
 
+.paymentMethodRedirect {
+  max-width: 620px;
+  text-align: center;
+}
+
 .lockedAccountField:disabled {
   color: var(--muted);
   background: #eef0ed;

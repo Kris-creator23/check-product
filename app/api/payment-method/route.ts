@@ -57,6 +57,20 @@ export async function POST(request: Request) {
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const savedPaymentMethods = await stripe.paymentMethods.list({
+    customer: customerId,
+    type: "card",
+    limit: 1
+  });
+
+  if (savedPaymentMethods.data.length > 0) {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${siteUrl}/dashboard`
+    });
+    return NextResponse.json({ url: portalSession.url });
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "setup",
     customer: customerId,

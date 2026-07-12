@@ -5,7 +5,6 @@ import { BrandLogo } from "../components/BrandLogo";
 import { cleanCompanyInput, isValidFinnishBusinessId } from "../../lib/company";
 import { createBrowserSupabase } from "../../lib/supabase";
 import { plans, type PlanId } from "../../lib/plans";
-import { siteContent } from "../../lib/siteContent";
 
 type Profile = {
   selected_plan: PlanId | null;
@@ -189,38 +188,6 @@ export default function DashboardPage() {
     window.location.href = data.url;
   }
 
-  async function portal() {
-    const sessionToken = await token();
-    if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
-
-    const response = await fetch("/api/portal", {
-      method: "POST",
-      headers: { authorization: `Bearer ${sessionToken}` }
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (data.requiresCheckout) return checkout();
-      return setMessage(data.error ?? `Asiakasportaalin avaaminen epäonnistui. Ota yhteyttä: ${siteContent.supportEmail}.`);
-    }
-    window.location.href = data.url;
-  }
-
-  async function managePaymentMethod() {
-    if (hasPaymentMethod) return portal();
-
-    const sessionToken = await token();
-    if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
-    setMessage("");
-
-    const response = await fetch("/api/payment-method", {
-      method: "POST",
-      headers: { authorization: `Bearer ${sessionToken}` }
-    });
-    const data = await response.json();
-    if (!response.ok) return setMessage(data.error ?? "Maksutavan lisääminen epäonnistui.");
-    window.location.href = data.url;
-  }
-
   const hasCurrentSubscription = Boolean(profile?.stripe_subscription_id && profile?.subscription_status && !["canceled", "incomplete_expired"].includes(profile.subscription_status));
   const trialAlreadyUsed = Boolean(profile?.trial_started_at);
   const receiptQuota = plans[profile?.selected_plan ?? plan].quota;
@@ -324,14 +291,9 @@ export default function DashboardPage() {
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div className="accountActionCell">
                   <b>Maksutapa</b>
-                  <button
-                    className="button secondary compactButton"
-                    onClick={managePaymentMethod}
-                    disabled={!companyName || !businessId}
-                    title={!companyName || !businessId ? "Tallenna yritystiedot ensin." : undefined}
-                  >
+                  <a className="button secondary compactButton" href="/payment-method">
                     Hallinnoi maksutapaa
-                  </button>
+                  </a>
                 </div>
               </div>
               <div className="actions accountEditActions">
