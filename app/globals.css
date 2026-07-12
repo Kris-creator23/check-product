@@ -216,9 +216,11 @@ h3 {
 
 .heroVisual {
   display: block;
-  width: 100%;
+  width: 125%;
+  max-width: none;
   height: auto;
   align-self: center;
+  justify-self: center;
   object-fit: contain;
   object-position: center;
 }
@@ -810,6 +812,10 @@ select {
 
   .hero {
     min-height: auto;
+  }
+
+  .heroVisual {
+    width: 100%;
   }
 }
 
