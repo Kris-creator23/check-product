@@ -27,7 +27,7 @@ Kokeilu kestää 7 päivää. Basic sisältää 50 kuittia kuukaudessa, Pro 100 
 
 Maksut käsitellään Stripen kautta. Kortti- ja Apple Pay -maksut voidaan käsitellä Stripessä. Yrityslaskutus voidaan sopia erikseen.
 
-Jos kokeilu aloitetaan ilman maksutietoja, kokeilu ei muutu automaattisesti maksulliseksi tilaukseksi. Jos asiakas lisää maksutavan ja aloittaa maksullisen tilauksen, tilaus jatkuu kokeilun jälkeen maksullisena, ellei sitä peruta ajoissa.
+Kokeilun aloittaminen edellyttää maksutavan lisäämistä Stripe Checkoutissa. Maksua ei veloiteta kokeilun alussa. Tilaus jatkuu kokeilun jälkeen maksullisena, ellei sitä peruta ennen ilmoitettua kokeilun päättymisaikaa. Tilauksen voi perua milloin tahansa Stripe Customer Portalissa.
 
 ## 5. Kuittien tunnistus ja automaatio
 

@@ -156,7 +156,7 @@ export async function POST(request: Request) {
   const selectedPlan = profile.selected_plan as PlanId | null;
   const plan = selectedPlan ? getPlan(selectedPlan) : null;
   const trialActive = profile.trial_ends_at ? new Date(profile.trial_ends_at).getTime() > Date.now() : false;
-  const paidActive = ["active", "trialing"].includes(profile.subscription_status ?? "");
+  const paidActive = profile.subscription_status === "active";
   const quota = plan?.quota ?? 0;
   const receiptsUsed = profile.receipts_used ?? 0;
 

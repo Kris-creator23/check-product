@@ -8,7 +8,7 @@ from playwright.sync_api import Error as PlaywrightError
 from receipt_parser import parse_receipt
 from client_settings import ensure_ai_acknowledgement, get_receipts_dir
 from config import PROCESSED_DIR, FAILED_DIR
-from check_auth import record_receipt_usage
+from check_auth import record_receipt_usage, require_active_subscription
 
 
 ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
@@ -651,6 +651,10 @@ def upload_all_receipts(page, receipts_dir=None):
         print("=" * 60)
 
         try:
+
+            # Re-check immediately before every receipt so an expired trial or
+            # exhausted quota cannot keep working in a long-running session.
+            require_active_subscription()
 
             open_new_receipt(page)
 

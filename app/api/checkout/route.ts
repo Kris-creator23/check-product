@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const metadata = auth.user.user_metadata as Record<string, string | undefined>;
   const company = cleanCompanyInput({
     companyName: body.companyName ?? profile?.company_name ?? metadata.company_name,
-    businessId: body.businessId ?? profile?.business_id ?? metadata.business_id,
+    businessId: profile?.business_id ?? body.businessId ?? metadata.business_id,
     vatId: body.vatId ?? profile?.vat_id ?? metadata.vat_id
   });
 
@@ -48,6 +48,12 @@ export async function POST(request: Request) {
 
   if (trialLookupError) return NextResponse.json({ error: trialLookupError.message }, { status: 500 });
   const companyHasUsedTrial = Boolean(profile?.trial_started_at || existingCompanyTrials?.length);
+  const trialEnd = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
+  const trialEndLabel = new Intl.DateTimeFormat("fi-FI", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Europe/Helsinki"
+  }).format(new Date(trialEnd * 1000));
 
   let customerId = profile?.stripe_customer_id;
   if (!customerId) {
@@ -93,12 +99,12 @@ export async function POST(request: Request) {
     custom_text: {
       submit: {
         message: companyHasUsedTrial
-          ? "Tällä Y-tunnuksella maksuton kokeilu on jo käytetty. Tilaus alkaa maksullisena heti, ja sitä voi hallita Stripe Customer Portalissa."
-          : "7 päivän kokeilun jälkeen tilaus muuttuu maksulliseksi, ellei sitä peruta ennen kokeilun päättymistä. Tilausta voi hallita Stripe Customer Portalissa."
+          ? "Tällä Y-tunnuksella maksuton kokeilu on jo käytetty. Tilaus alkaa maksullisena heti. Voit perua tilauksen milloin tahansa Stripe Customer Portalissa."
+          : `Tänään ei veloiteta. Maksuton kokeilu päättyy ${trialEndLabel}. Ensimmäinen maksu veloitetaan tämän jälkeen, ellei tilausta peruta ennen kokeilun päättymistä. Voit perua tilauksen milloin tahansa.`
       }
     },
     subscription_data: {
-      ...(companyHasUsedTrial ? {} : { trial_period_days: 7 }),
+      ...(companyHasUsedTrial ? {} : { trial_end: trialEnd }),
       metadata: {
         user_id: auth.user.id,
         plan: plan.id,

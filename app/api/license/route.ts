@@ -18,19 +18,27 @@ export async function GET(request: Request) {
   const selectedPlan = profile.selected_plan as PlanId | null;
   const plan = selectedPlan ? plans[selectedPlan] : null;
   const trialActive = profile.trial_ends_at ? new Date(profile.trial_ends_at).getTime() > Date.now() : false;
-  const paidActive = ["active", "trialing"].includes(profile.subscription_status ?? "");
+  const paidActive = profile.subscription_status === "active";
   const quota = plan?.quota ?? 0;
   const receiptsUsed = profile.receipts_used ?? 0;
   const receiptsRemaining = Math.max(0, quota - receiptsUsed);
+  const active = (trialActive || paidActive) && receiptsUsed < quota;
+  const reason = receiptsUsed >= quota
+    ? "quota_exceeded"
+    : !trialActive && !paidActive && profile.trial_ends_at
+      ? "trial_expired"
+      : !active
+        ? "subscription_inactive"
+        : null;
 
   return NextResponse.json({
-    active: (trialActive || paidActive) && receiptsUsed < quota,
+    active,
     plan: selectedPlan,
     quota,
     receiptsUsed,
     receiptsRemaining,
     trialEndsAt: profile.trial_ends_at,
     subscriptionStatus: profile.subscription_status,
-    reason: receiptsUsed >= quota ? "quota_exceeded" : null
+    reason
   });
 }

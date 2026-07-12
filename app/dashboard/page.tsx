@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BrandLogo } from "../components/BrandLogo";
 import { cleanCompanyInput, isValidFinnishBusinessId } from "../../lib/company";
 import { createBrowserSupabase } from "../../lib/supabase";
@@ -17,6 +17,8 @@ type Profile = {
   subscription_status: string | null;
   current_period_end: string | null;
   receipts_used: number | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 };
 
 export default function DashboardPage() {
@@ -29,10 +31,11 @@ export default function DashboardPage() {
   const [businessId, setBusinessId] = useState("");
   const [vatId, setVatId] = useState("");
   const [invoiceEmail, setInvoiceEmail] = useState("");
-  const [b2bAccepted, setB2bAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [savingCompany, setSavingCompany] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(false);
+  const checkoutStarted = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -52,6 +55,18 @@ export default function DashboardPage() {
     void loadProfile();
   }, []);
 
+  useEffect(() => {
+    if (loading || checkoutStarted.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") !== "1") return;
+
+    checkoutStarted.current = true;
+    params.delete("checkout");
+    const nextQuery = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`);
+    void checkout();
+  }, [loading]);
+
   async function token() {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token;
@@ -70,6 +85,11 @@ export default function DashboardPage() {
       headers: { authorization: `Bearer ${sessionToken}` }
     });
     const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error ?? "Tilin tietojen lataaminen epäonnistui.");
+      setLoading(false);
+      return;
+    }
     setProfile(data.profile ?? null);
     setUserEmail(data.user?.email ?? "");
     if (data.profile?.selected_plan) setPlan(data.profile.selected_plan);
@@ -77,6 +97,7 @@ export default function DashboardPage() {
     if (data.profile?.company_name || metadata.company_name) setCompanyName(data.profile?.company_name ?? metadata.company_name);
     if (data.profile?.business_id || metadata.business_id) setBusinessId(data.profile?.business_id ?? metadata.business_id);
     if (data.profile?.vat_id || metadata.vat_id) setVatId(data.profile?.vat_id ?? metadata.vat_id);
+    setEditingCompany(!data.profile?.company_name || !data.profile?.business_id);
     setLoading(false);
   }
 
@@ -114,6 +135,11 @@ export default function DashboardPage() {
     setSavingCompany(false);
     if (!response.ok) return setMessage(data.error ?? "Yritystietojen tallennus epäonnistui.");
     setProfile(data.profile);
+    setCompanyName(data.profile.company_name ?? "");
+    setBusinessId(data.profile.business_id ?? "");
+    setVatId(data.profile.vat_id ?? "");
+    setEditingCompany(false);
+    window.localStorage.removeItem("checkappCompanyDraft");
     setMessage("Yritystiedot tallennettu.");
   }
 
@@ -122,10 +148,6 @@ export default function DashboardPage() {
     if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
     const company = validateCompany();
     if (!company) return;
-    if (!b2bAccepted) {
-      return setMessage("Vahvista ensin, että käytät CheckAppia yrityksenä tai organisaation edustajana.");
-    }
-
     const response = await fetch("/api/checkout", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${sessionToken}` },
@@ -152,11 +174,22 @@ export default function DashboardPage() {
     window.location.href = data.url;
   }
 
-  const hasStripeSubscription = Boolean(profile?.subscription_status && ["active", "trialing", "past_due", "unpaid", "paused"].includes(profile.subscription_status));
+  const hasStripeCustomer = Boolean(profile?.stripe_customer_id);
+  const hasCurrentSubscription = Boolean(profile?.stripe_subscription_id && profile?.subscription_status && !["canceled", "incomplete_expired"].includes(profile.subscription_status));
   const trialAlreadyUsed = Boolean(profile?.trial_started_at);
   const trialEndLabel = profile?.trial_ends_at
     ? new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(profile.trial_ends_at))
     : "Ei aloitettu";
+  const currentPeriodEndLabel = profile?.current_period_end
+    ? new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(profile.current_period_end))
+    : "Ei aktiivista maksukautta";
+  const statusLabel = profile?.subscription_status === "trialing"
+    ? "Maksuton kokeilu"
+    : profile?.subscription_status === "active"
+      ? "Aktiivinen tilaus"
+      : profile?.subscription_status === "past_due"
+        ? "Maksu myöhässä"
+        : profile?.subscription_status ?? "Ei aktiivista tilausta";
 
   async function requestInvoice() {
     const sessionToken = await token();
@@ -215,10 +248,10 @@ export default function DashboardPage() {
                 <div><b>Yritys</b><span>{companyName || "Puuttuu"}</span></div>
                 <div><b>Y-tunnus</b><span>{businessId || "Puuttuu"}</span></div>
                 <div><b>Paketti</b><span>{profile?.selected_plan ? plans[profile.selected_plan].name : plans[plan].name}</span></div>
-                <div><b>Tila</b><span>{profile?.subscription_status ?? "trial / ei maksutapaa"}</span></div>
+                <div><b>Tila</b><span>{statusLabel}</span></div>
                 <div><b>Kuitit</b><span>{profile?.receipts_used ?? 0} / {plans[profile?.selected_plan ?? plan].quota}</span></div>
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
-                <div><b>Maksullinen käyttö päättyy</b><span>{profile?.current_period_end ? new Date(profile.current_period_end).toLocaleDateString("fi-FI") : "Ei aktiivista maksukautta"}</span></div>
+                <div><b>{profile?.subscription_status === "trialing" ? "Ensimmäinen veloitus" : "Nykyinen maksukausi päättyy"}</b><span>{profile?.subscription_status === "trialing" ? trialEndLabel : currentPeriodEndLabel}</span></div>
               </div>
               <label>
                 Valitse paketti
@@ -232,48 +265,56 @@ export default function DashboardPage() {
               <div className="formGrid">
                 <label>
                   Yrityksen nimi
-                  <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Yritys Oy" />
+                  <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Yritys Oy" disabled={!editingCompany} />
                 </label>
                 <label>
                   Y-tunnus
-                  <input value={businessId} onChange={(event) => setBusinessId(event.target.value)} placeholder="1234567-8" />
+                  <input
+                    value={businessId}
+                    onChange={(event) => setBusinessId(event.target.value)}
+                    placeholder="1234567-8"
+                    disabled={Boolean(profile?.business_id) || !editingCompany}
+                    title={profile?.business_id ? "Y-tunnusta ei voi muuttaa tallennuksen jälkeen." : undefined}
+                  />
                 </label>
                 <label>
                   ALV-tunnus, jos käytössä
-                  <input value={vatId} onChange={(event) => setVatId(event.target.value)} placeholder="FI12345678" />
+                  <input value={vatId} onChange={(event) => setVatId(event.target.value)} placeholder="FI12345678" disabled={!editingCompany} />
                 </label>
               </div>
               <div className="actions">
-                <button className="button secondary" onClick={saveCompany} disabled={savingCompany || !companyName || !businessId}>
-                  {savingCompany ? "Tallennetaan..." : "Tallenna yritystiedot"}
-                </button>
+                {editingCompany ? (
+                  <button className="button primary" onClick={saveCompany} disabled={savingCompany || !companyName || !businessId}>
+                    {savingCompany ? "Tallennetaan..." : "Tallenna yritystiedot"}
+                  </button>
+                ) : (
+                  <button className="button secondary" onClick={() => { setEditingCompany(true); setMessage(""); }}>
+                    Muokkaa tietoja
+                  </button>
+                )}
               </div>
               <p className="helperText">
                 Maksuton kokeilu on yrityskohtainen. Jos sama Y-tunnus on jo käyttänyt kokeilun, tilaus alkaa maksullisena heti Stripe Checkoutissa.
               </p>
-              <label className="checkLine">
-                <input
-                  type="checkbox"
-                  checked={b2bAccepted}
-                  onChange={(event) => setB2bAccepted(event.target.checked)}
-                />
-                <span>Vahvistan, että käytän CheckAppia yrityksenä, yksityisenä elinkeinonharjoittajana tai organisaation edustajana, en kuluttajana yksityiseen käyttöön.</span>
-              </label>
               <p className="helperText">
                 Maksutapa lisätään turvallisesti Stripe Checkoutissa. Uusi tilaus sisältää 7 päivän maksuttoman kokeilun
                 ja jatkuu sen jälkeen maksullisena, ellei sitä peruta ennen kokeilun päättymistä. Tilauksen voi perua milloin tahansa.
               </p>
+              <p className="helperText">Jos perut tilauksen kokeilun aikana, sinua ei veloiteta.</p>
               <p className="helperText">
                 Mac voi ensimmäisellä avauskerralla varoittaa, koska CheckApp ladataan verkkosivulta eikä App Storesta.
                 Avaa sovellus tarvittaessa Finderissa: ctrl-klikkaa CheckAppia, valitse Avaa ja vahvista Avaa.
               </p>
               <div className="actions">
-                <button className="button primary" onClick={checkout} disabled={!b2bAccepted}>
-                  {trialAlreadyUsed ? "Jatka maksulliseen tilaukseen" : "Aloita 7 päivän kokeilu"}
-                </button>
-                <button className="button secondary" onClick={portal} disabled={!hasStripeSubscription}>Hallinnoi tilausta</button>
+                {!hasCurrentSubscription && (
+                  <button className="button primary" onClick={checkout} disabled={!companyName || !businessId}>
+                    {trialAlreadyUsed ? "Jatka maksulliseen tilaukseen" : "Aloita 7 päivän kokeilu"}
+                  </button>
+                )}
+                <a className="button secondary" href="/api/download">Lataa CheckApp Macille</a>
+                <button className="button secondary" onClick={portal} disabled={!hasStripeCustomer}>Hallinnoi tilausta</button>
               </div>
-              {!hasStripeSubscription && <p className="helperText">Tilauksen hallinta avautuu, kun maksutapa on lisätty Stripe Checkoutissa.</p>}
+              {!hasStripeCustomer && <p className="helperText">Tilauksen hallinta avautuu, kun maksutapa on lisätty Stripe Checkoutissa.</p>}
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>
                 <p>Jos haluat maksaa laskulla, lähetä laskutuspyyntö. Kokeilu voi alkaa heti, ja laskutus sovitaan erikseen.</p>
@@ -284,7 +325,7 @@ export default function DashboardPage() {
                   </label>
                   <label>
                     Y-tunnus
-                    <input value={businessId} onChange={(event) => setBusinessId(event.target.value)} placeholder="1234567-8" />
+                    <input value={businessId} onChange={(event) => setBusinessId(event.target.value)} placeholder="1234567-8" disabled={Boolean(profile?.business_id)} />
                   </label>
                   <label>
                     Laskutussähköposti

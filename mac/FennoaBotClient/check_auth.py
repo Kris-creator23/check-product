@@ -144,6 +144,11 @@ def require_active_subscription():
             raise RuntimeError(
                 "Kuukausittainen kuittikiintiö on täynnä. Vaihda suurempaan pakettiin tai odota seuraavaa laskutuskautta."
             )
+        if reason == "trial_expired":
+            raise RuntimeError(
+                "CheckAppin maksuton kokeilu on päättynyt. "
+                "Jatka tilausta osoitteessa https://checkapp.fi/dashboard."
+            )
         raise RuntimeError(
             "CheckApp-tilaus ei ole aktiivinen. Kirjaudu osoitteessa https://checkapp.fi ja tarkista tilauksesi."
         )

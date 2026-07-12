@@ -12,6 +12,8 @@ export default function AuthCallbackPage() {
       const supabase = createBrowserSupabase();
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
+      const plan = params.get("plan");
+      const checkout = params.get("checkout");
 
       if (code) {
         await supabase.auth.exchangeCodeForSession(code);
@@ -19,7 +21,11 @@ export default function AuthCallbackPage() {
         await supabase.auth.getSession();
       }
 
-      router.replace("/dashboard");
+      const dashboardParams = new URLSearchParams();
+      if (plan === "basic" || plan === "pro" || plan === "premium") dashboardParams.set("plan", plan);
+      if (checkout === "1") dashboardParams.set("checkout", "1");
+      const query = dashboardParams.toString();
+      router.replace(`/dashboard${query ? `?${query}` : ""}`);
     }
 
     void finishLogin();

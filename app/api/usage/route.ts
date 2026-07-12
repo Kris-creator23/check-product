@@ -25,22 +25,32 @@ export async function POST(request: Request) {
 
   const { data: profile, error: readError } = await auth.supabase
     .from("profiles")
-    .select("receipts_used, selected_plan")
+    .select("receipts_used, selected_plan, trial_ends_at, subscription_status")
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
   if (readError) return NextResponse.json({ error: readError.message }, { status: 500 });
 
+  const selectedPlan = profile?.selected_plan as PlanId | null;
+  const quota = selectedPlan ? plans[selectedPlan]?.quota ?? 0 : 0;
+  const receiptsUsedBefore = profile?.receipts_used ?? 0;
+  const trialActive = profile?.trial_ends_at ? new Date(profile.trial_ends_at).getTime() > Date.now() : false;
+  const paidActive = profile?.subscription_status === "active";
+  if (!trialActive && !paidActive) {
+    return NextResponse.json({ error: "subscription inactive" }, { status: 403 });
+  }
+  if (receiptsUsedBefore >= quota) {
+    return NextResponse.json({ error: "usage limit reached" }, { status: 403 });
+  }
+
   const { error } = await auth.supabase
     .from("profiles")
-    .update({ receipts_used: (profile?.receipts_used ?? 0) + count })
+    .update({ receipts_used: receiptsUsedBefore + count })
     .eq("user_id", auth.user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const selectedPlan = profile?.selected_plan as PlanId | null;
-  const quota = selectedPlan ? plans[selectedPlan]?.quota ?? 0 : 0;
-  const receiptsUsed = (profile?.receipts_used ?? 0) + count;
+  const receiptsUsed = receiptsUsedBefore + count;
 
   return NextResponse.json({
     ok: true,

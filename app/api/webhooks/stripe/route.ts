@@ -37,14 +37,22 @@ export async function POST(request: Request) {
     const plan = session.metadata?.plan;
 
     if (userId) {
-      await supabase.from("profiles").upsert({
+      const subscriptionId = String(session.subscription);
+      const subscription = await getStripe().subscriptions.retrieve(subscriptionId) as Stripe.Subscription & {
+        current_period_end?: number;
+        trial_end?: number | null;
+      };
+      const { error } = await supabase.from("profiles").upsert({
         user_id: userId,
         selected_plan: plan,
         stripe_customer_id: String(session.customer),
-        stripe_subscription_id: String(session.subscription),
-        subscription_status: session.metadata?.trial_mode === "none" ? "active" : "trialing",
-        ...(session.metadata?.trial_mode === "none" ? {} : { trial_started_at: new Date().toISOString() })
+        stripe_subscription_id: subscriptionId,
+        subscription_status: subscription.status,
+        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+        trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+        ...(subscription.trial_end ? { trial_started_at: new Date().toISOString() } : {})
       }, { onConflict: "user_id" });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
 
@@ -54,7 +62,7 @@ export async function POST(request: Request) {
     const plan = subscription.metadata.plan;
 
     if (userId) {
-      await supabase.from("profiles").upsert({
+      const { error } = await supabase.from("profiles").upsert({
         user_id: userId,
         selected_plan: plan,
         stripe_customer_id: String(subscription.customer),
@@ -63,6 +71,7 @@ export async function POST(request: Request) {
         current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
         trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
       }, { onConflict: "user_id" });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
 

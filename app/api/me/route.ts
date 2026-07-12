@@ -28,11 +28,35 @@ export async function PATCH(request: Request) {
   const auth = await requireUser(request);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const body = await request.json();
-  const company = cleanCompanyInput({
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Virheelliset yritystiedot." }, { status: 400 });
+  }
+
+  const { data: existing, error: existingError } = await auth.supabase
+    .from("profiles")
+    .select("business_id")
+    .eq("user_id", auth.user.id)
+    .maybeSingle();
+
+  if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
+
+  const requestedCompany = cleanCompanyInput({
     companyName: body.companyName,
     businessId: body.businessId,
     vatId: body.vatId
+  });
+
+  if (existing?.business_id && requestedCompany.businessId !== existing.business_id) {
+    return NextResponse.json({
+      error: "Y-tunnusta ei voi muuttaa tallennuksen jälkeen. Ota yhteyttä asiakaspalveluun, jos tiedoissa on virhe."
+    }, { status: 409 });
+  }
+
+  const company = cleanCompanyInput({
+    companyName: requestedCompany.companyName,
+    businessId: existing?.business_id ?? requestedCompany.businessId,
+    vatId: requestedCompany.vatId
   });
 
   if (!company.companyName || !company.businessId) {

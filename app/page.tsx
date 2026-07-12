@@ -60,7 +60,7 @@ export default function HomePage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
+        redirectTo: `${window.location.origin}/auth/callback?plan=${plan}${passwordMode === "signup" ? "&checkout=1" : ""}`
       }
     });
     setBusy(false);
@@ -85,7 +85,7 @@ export default function HomePage() {
       setMessage(error ? error.message : "Kirjautuminen onnistui. Siirrytään omalle tilille.");
       if (!error) window.location.href = `/dashboard?plan=${plan}`;
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -95,11 +95,15 @@ export default function HomePage() {
             business_id_normalized: company.businessIdNormalized,
             vat_id: company.vatId
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback?plan=${plan}`
+          emailRedirectTo: `${window.location.origin}/auth/callback?plan=${plan}&checkout=1`
         }
       });
       if (!error) saveCompanyDraft();
-      setMessage(error ? error.message : "Tili luotu. Tarkista sähköposti, jos vahvistus vaaditaan.");
+      if (!error && data.session) {
+        window.location.href = `/dashboard?plan=${plan}&checkout=1`;
+        return;
+      }
+      setMessage(error ? error.message : "Tili luotu. Vahvista sähköpostiosoite, niin siirryt maksutavan lisäämiseen.");
     }
 
     setBusy(false);
@@ -220,14 +224,16 @@ export default function HomePage() {
                 </label>
               </>
             )}
-            <label className="checkLine">
-              <input
-                type="checkbox"
-                checked={b2bAccepted}
-                onChange={(event) => setB2bAccepted(event.target.checked)}
-              />
-              <span>Vahvistan, että käytän CheckAppia yrityksenä, yksityisenä elinkeinonharjoittajana tai organisaation edustajana, en kuluttajana yksityiseen käyttöön.</span>
-            </label>
+            {companyRequired && (
+              <label className="checkLine">
+                <input
+                  type="checkbox"
+                  checked={b2bAccepted}
+                  onChange={(event) => setB2bAccepted(event.target.checked)}
+                />
+                <span>Vahvistan, että käytän CheckAppia yrityksenä, yksityisenä elinkeinonharjoittajana tai organisaation edustajana, en kuluttajana yksityiseen käyttöön.</span>
+              </label>
+            )}
             <button className="button primary full" disabled={busy || !canSubmit} onClick={signInWithEmail}>
               {passwordMode === "signin" ? "Kirjaudu sisään" : "Aloita kokeilu"}
             </button>
