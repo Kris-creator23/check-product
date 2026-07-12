@@ -46,6 +46,12 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     const urlPlan = params.get("plan");
     if (urlPlan === "basic" || urlPlan === "pro" || urlPlan === "premium") setPlan(urlPlan);
+    if (params.get("payment_method") === "saved") {
+      setMessage("Maksutapa tallennettu Stripeen.");
+      params.delete("payment_method");
+      const cleanQuery = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
+    }
     const draft = window.localStorage.getItem("checkappCompanyDraft");
     if (draft) {
       try {
@@ -199,6 +205,22 @@ export default function DashboardPage() {
     window.location.href = data.url;
   }
 
+  async function managePaymentMethod() {
+    if (hasPaymentMethod) return portal();
+
+    const sessionToken = await token();
+    if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
+    setMessage("");
+
+    const response = await fetch("/api/payment-method", {
+      method: "POST",
+      headers: { authorization: `Bearer ${sessionToken}` }
+    });
+    const data = await response.json();
+    if (!response.ok) return setMessage(data.error ?? "Maksutavan lisääminen epäonnistui.");
+    window.location.href = data.url;
+  }
+
   const hasCurrentSubscription = Boolean(profile?.stripe_subscription_id && profile?.subscription_status && !["canceled", "incomplete_expired"].includes(profile.subscription_status));
   const trialAlreadyUsed = Boolean(profile?.trial_started_at);
   const receiptQuota = plans[profile?.selected_plan ?? plan].quota;
@@ -302,7 +324,12 @@ export default function DashboardPage() {
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div className="accountActionCell">
                   <b>Maksutapa</b>
-                  <button className="button secondary compactButton" onClick={hasPaymentMethod ? portal : checkout}>
+                  <button
+                    className="button secondary compactButton"
+                    onClick={managePaymentMethod}
+                    disabled={!companyName || !businessId}
+                    title={!companyName || !businessId ? "Tallenna yritystiedot ensin." : undefined}
+                  >
                     Hallinnoi maksutapaa
                   </button>
                 </div>
