@@ -37,6 +37,10 @@ export default function DashboardPage() {
   const [editingCompany, setEditingCompany] = useState(false);
   const checkoutStarted = useRef(false);
 
+  function saveCompanyDraft(values = { companyName, businessId, vatId }) {
+    window.localStorage.setItem("checkappCompanyDraft", JSON.stringify(values));
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlPlan = params.get("plan");
@@ -54,6 +58,11 @@ export default function DashboardPage() {
     }
     void loadProfile();
   }, []);
+
+  useEffect(() => {
+    if (loading || (!companyName && !businessId && !vatId)) return;
+    saveCompanyDraft();
+  }, [companyName, businessId, vatId, loading]);
 
   useEffect(() => {
     if (loading || checkoutStarted.current) return;
@@ -82,7 +91,8 @@ export default function DashboardPage() {
     }
 
     const response = await fetch("/api/me", {
-      headers: { authorization: `Bearer ${sessionToken}` }
+      headers: { authorization: `Bearer ${sessionToken}` },
+      cache: "no-store"
     });
     const data = await response.json();
     if (!response.ok) {
@@ -94,9 +104,12 @@ export default function DashboardPage() {
     setUserEmail(data.user?.email ?? "");
     if (data.profile?.selected_plan) setPlan(data.profile.selected_plan);
     const metadata = data.user?.metadata ?? {};
-    if (data.profile?.company_name || metadata.company_name) setCompanyName(data.profile?.company_name ?? metadata.company_name);
-    if (data.profile?.business_id || metadata.business_id) setBusinessId(data.profile?.business_id ?? metadata.business_id);
-    if (data.profile?.vat_id || metadata.vat_id) setVatId(data.profile?.vat_id ?? metadata.vat_id);
+    const storedCompanyName = data.profile?.company_name ?? metadata.company_name;
+    const storedBusinessId = data.profile?.business_id ?? metadata.business_id;
+    const storedVatId = data.profile?.vat_id ?? metadata.vat_id;
+    if (storedCompanyName) setCompanyName(storedCompanyName);
+    if (storedBusinessId) setBusinessId(storedBusinessId);
+    if (storedVatId) setVatId(storedVatId);
     setEditingCompany(!data.profile?.company_name || !data.profile?.business_id);
     setLoading(false);
   }
@@ -129,17 +142,25 @@ export default function DashboardPage() {
     const response = await fetch("/api/me", {
       method: "PATCH",
       headers: { "content-type": "application/json", authorization: `Bearer ${sessionToken}` },
+      cache: "no-store",
       body: JSON.stringify(company)
     });
     const data = await response.json();
     setSavingCompany(false);
     if (!response.ok) return setMessage(data.error ?? "Yritystietojen tallennus epäonnistui.");
+    const savedCompanyName = data.profile?.company_name ?? "";
+    const savedBusinessId = data.profile?.business_id ?? "";
+    const savedVatId = data.profile?.vat_id ?? "";
+    if (savedCompanyName !== company.companyName || savedBusinessId !== company.businessId) {
+      setMessage("Yritystietojen tallennusta ei voitu vahvistaa. Yritä uudelleen.");
+      return;
+    }
     setProfile(data.profile);
-    setCompanyName(data.profile.company_name ?? "");
-    setBusinessId(data.profile.business_id ?? "");
-    setVatId(data.profile.vat_id ?? "");
+    setCompanyName(savedCompanyName);
+    setBusinessId(savedBusinessId);
+    setVatId(savedVatId);
     setEditingCompany(false);
-    window.localStorage.removeItem("checkappCompanyDraft");
+    saveCompanyDraft({ companyName: savedCompanyName, businessId: savedBusinessId, vatId: savedVatId });
     setMessage("Yritystiedot tallennettu.");
   }
 
@@ -289,7 +310,7 @@ export default function DashboardPage() {
                   </button>
                 ) : (
                   <button className="button secondary" onClick={() => { setEditingCompany(true); setMessage(""); }}>
-                    Muokkaa tietoja
+                    Muokkaa tiedot
                   </button>
                 )}
               </div>

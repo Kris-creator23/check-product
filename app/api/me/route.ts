@@ -3,6 +3,8 @@ import { requireUser } from "../../../lib/auth";
 import { cleanCompanyInput, isValidFinnishBusinessId } from "../../../lib/company";
 import { syncStripeSubscriptionProfile } from "../../../lib/subscription";
 
+const noStoreHeaders = { "Cache-Control": "no-store, no-cache, must-revalidate" };
+
 export async function GET(request: Request) {
   const auth = await requireUser(request);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
       email: auth.user.email,
       metadata: auth.user.user_metadata
     }
-  });
+  }, { headers: noStoreHeaders });
 }
 
 export async function PATCH(request: Request) {
@@ -104,5 +106,5 @@ export async function PATCH(request: Request) {
     console.error("Company metadata sync failed", metadataError);
   }
 
-  return NextResponse.json({ profile });
+  return NextResponse.json({ profile }, { headers: noStoreHeaders });
 }
