@@ -89,8 +89,8 @@ nav a:hover,
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(340px, 0.98fr);
-  gap: clamp(34px, 6vw, 80px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 4vw, 56px);
   min-height: calc(100vh - 78px);
   align-items: center;
   padding: clamp(42px, 7vw, 92px) clamp(18px, 4vw, 56px) 46px;
@@ -218,8 +218,9 @@ h3 {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  align-self: center;
+  object-fit: contain;
+  object-position: center;
 }
 
 .windowBar {

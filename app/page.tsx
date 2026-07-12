@@ -131,7 +131,7 @@ export default function HomePage() {
 
           <img
             className="heroVisual"
-            src="/checkapp-automation-hero.jpg"
+            src="/checkapp-automation-hero-clean.png"
             alt="CheckApp automatisoi kuittien käsittelyä tietokoneella ja puhelimella"
             width="1536"
             height="1024"
