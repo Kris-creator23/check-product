@@ -129,20 +129,13 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="window" aria-label="CheckApp-sovelluksen esikatselu">
-            <div className="windowBar"><span /><span /><span /></div>
-            <div className="appPanel">
-              <div className="status ok"><span /><div><b>Fennoa avattu</b><p>Käyttäjä kirjautuu suoraan Fennoaan</p></div></div>
-              <div className="folder"><i /><div><b>Kuittikansio</b><p>/Receipts/To upload</p></div></div>
-              <div className="queue">
-                <div className="queueHead"><b>Latausjono</b><span>Tänään</span></div>
-                <div className="receipt"><span>invoice-1042.pdf</span><b>Tallennettu</b></div>
-                <div className="receipt active"><span>receipt-market.jpg</span><b>Täytetään</b></div>
-                <div className="receipt muted"><span>fuel-0704.pdf</span><b>Odottaa</b></div>
-              </div>
-              <button className="darkButton">Käynnistä käsittely</button>
-            </div>
-          </div>
+          <img
+            className="heroVisual"
+            src="/checkapp-automation-hero.jpg"
+            alt="CheckApp automatisoi kuittien käsittelyä tietokoneella ja puhelimella"
+            width="1536"
+            height="1024"
+          />
         </section>
 
         <section className="section split">

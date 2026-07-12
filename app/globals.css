@@ -214,6 +214,14 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.heroVisual {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
 .windowBar {
   display: flex;
   gap: 8px;
