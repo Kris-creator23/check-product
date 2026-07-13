@@ -89,7 +89,7 @@ export async function PATCH(request: Request) {
 
   const { data: existing, error: existingError } = await auth.supabase
     .from("profiles")
-    .select("business_id")
+    .select("*")
     .eq("user_id", auth.user.id)
     .maybeSingle();
 
