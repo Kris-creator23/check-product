@@ -52,6 +52,8 @@ export default function DashboardPage() {
       params.delete("payment_method");
       const cleanQuery = params.toString();
       window.history.replaceState({}, "", `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
+      // Reload profile to get updated payment method status
+      void loadProfile();
     }
     const draft = window.localStorage.getItem("checkappCompanyDraft");
     if (draft) {
@@ -172,6 +174,8 @@ export default function DashboardPage() {
     setEditingCompany(false);
     saveCompanyDraft({ companyName: savedCompanyName, businessId: savedBusinessId, vatId: savedVatId });
     setMessage("Yritystiedot tallennettu.");
+    // Refresh profile to update all state including payment method
+    void loadProfile();
   }
 
   async function checkout() {
@@ -334,7 +338,7 @@ export default function DashboardPage() {
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div className="accountActionCell">
                   <b>Maksutapa</b>
-                  <button className="button secondary compactButton" onClick={managePaymentMethod} disabled={managingPaymentMethod}>
+                  <button className="button secondary compactButton" onClick={managePaymentMethod} disabled={managingPaymentMethod || !profile?.company_name || !profile?.business_id}>
                     {managingPaymentMethod ? "Avataan Stripe..." : "Hallinnoi maksutapaa"}
                   </button>
                 </div>
