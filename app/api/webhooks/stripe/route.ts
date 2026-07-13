@@ -37,8 +37,30 @@ export async function POST(request: Request) {
     const userId = session.metadata?.user_id;
     const plan = session.metadata?.plan;
 
-    if (userId) {
-      const subscriptionId = String(session.subscription);
+    if (session.mode === "setup" && userId && session.setup_intent) {
+      const setupIntentId = typeof session.setup_intent === "string"
+        ? session.setup_intent
+        : session.setup_intent.id;
+      const setupIntent = await getStripe().setupIntents.retrieve(setupIntentId);
+      if (setupIntent.status === "succeeded") {
+        const paymentMethodId = typeof setupIntent.payment_method === "string"
+          ? setupIntent.payment_method
+          : setupIntent.payment_method?.id ?? null;
+        const { error } = await supabase.from("profiles").upsert({
+          user_id: userId,
+          stripe_customer_id: String(session.customer),
+          payment_method_ready: true,
+          stripe_payment_method_id: paymentMethodId,
+          payment_method_added_at: new Date().toISOString()
+        }, { onConflict: "user_id" });
+        if (error) console.error("Failed to store setup payment method", error);
+      }
+    }
+
+    if (session.mode === "subscription" && userId && session.subscription) {
+      const subscriptionId = typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription.id;
       const subscription = await getStripe().subscriptions.retrieve(subscriptionId) as Stripe.Subscription & {
         current_period_end?: number;
         trial_end?: number | null;
@@ -55,6 +77,23 @@ export async function POST(request: Request) {
         ...(subscription.trial_end ? { trial_started_at: new Date().toISOString() } : {})
       }, { onConflict: "user_id" });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  if (event.type === "payment_method.detached") {
+    const paymentMethod = event.data.object as Stripe.PaymentMethod;
+    const customerId = typeof paymentMethod.customer === "string"
+      ? paymentMethod.customer
+      : paymentMethod.customer?.id;
+    if (customerId) {
+      const cards = await getStripe().paymentMethods.list({ customer: customerId, type: "card", limit: 1 });
+      if (cards.data.length === 0) {
+        const { error } = await supabase.from("profiles").update({
+          payment_method_ready: false,
+          stripe_payment_method_id: null
+        }).eq("stripe_customer_id", customerId);
+        if (error) console.error("Failed to clear detached payment method", error);
+      }
     }
   }
 

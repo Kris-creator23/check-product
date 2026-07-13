@@ -10,6 +10,9 @@ create table if not exists public.profiles (
   trial_ends_at timestamptz,
   subscription_status text,
   stripe_customer_id text,
+  payment_method_ready boolean not null default false,
+  stripe_payment_method_id text,
+  payment_method_added_at timestamptz,
   stripe_subscription_id text,
   current_period_end timestamptz,
   receipts_used integer not null default 0,
@@ -22,6 +25,13 @@ alter table public.profiles add column if not exists company_name text;
 alter table public.profiles add column if not exists business_id text;
 alter table public.profiles add column if not exists business_id_normalized text;
 alter table public.profiles add column if not exists vat_id text;
+alter table public.profiles add column if not exists payment_method_ready boolean not null default false;
+alter table public.profiles add column if not exists stripe_payment_method_id text;
+alter table public.profiles add column if not exists payment_method_added_at timestamptz;
+
+create unique index if not exists profiles_stripe_customer_id_unique
+  on public.profiles (stripe_customer_id)
+  where stripe_customer_id is not null;
 
 create index if not exists profiles_business_id_normalized_idx
   on public.profiles (business_id_normalized)
@@ -35,14 +45,7 @@ create policy "Users can read own profile"
   using (auth.uid() = user_id);
 
 drop policy if exists "Users can update own profile" on public.profiles;
-create policy "Users can update own profile"
-  on public.profiles for update
-  using (auth.uid() = user_id);
-
 drop policy if exists "Users can insert own profile" on public.profiles;
-create policy "Users can insert own profile"
-  on public.profiles for insert
-  with check (auth.uid() = user_id);
 
 create or replace function public.set_updated_at()
 returns trigger as $$

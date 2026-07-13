@@ -22,7 +22,8 @@ export async function POST(request: Request) {
 
   if (customerId) {
     try {
-      await stripe.customers.retrieve(customerId);
+      const customer = await stripe.customers.retrieve(customerId);
+      if (customer.deleted) customerId = null;
     } catch {
       customerId = null;
     }
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
         business_id: profile.business_id,
         vat_id: profile.vat_id ?? ""
       }
-    });
+    }, { idempotencyKey: `checkapp-customer-${auth.user.id}` });
     customerId = customer.id;
   }
 
@@ -63,19 +64,32 @@ export async function POST(request: Request) {
     limit: 1
   });
 
-  if (savedPaymentMethods.data.length > 0) {
+  const savedPaymentMethod = savedPaymentMethods.data[0] ?? null;
+  const { error: paymentStateError } = await auth.supabase
+    .from("profiles")
+    .update({
+      payment_method_ready: Boolean(savedPaymentMethod),
+      stripe_payment_method_id: savedPaymentMethod?.id ?? null,
+      ...(savedPaymentMethod ? { payment_method_added_at: new Date().toISOString() } : {})
+    })
+    .eq("user_id", auth.user.id);
+  // The live Stripe check remains authoritative even before the optional
+  // payment-state columns have been added to an older database.
+  if (paymentStateError) console.error("Payment method state sync failed", paymentStateError);
+
+  if (savedPaymentMethod) {
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${siteUrl}/dashboard`
     });
-    return NextResponse.json({ url: portalSession.url });
+    return NextResponse.json({ destination: "portal", url: portalSession.url });
   }
 
   const session = await stripe.checkout.sessions.create({
     mode: "setup",
     customer: customerId,
     payment_method_types: ["card"],
-    success_url: `${siteUrl}/dashboard?payment_method=saved`,
+    success_url: `${siteUrl}/dashboard?payment_method=processing`,
     cancel_url: `${siteUrl}/dashboard?payment_method=cancelled`,
     billing_address_collection: "required",
     customer_update: {
@@ -84,9 +98,15 @@ export async function POST(request: Request) {
     },
     metadata: {
       user_id: auth.user.id,
-      purpose: "save_payment_method"
+      flow: "save_payment_method"
+    },
+    setup_intent_data: {
+      metadata: {
+        user_id: auth.user.id,
+        flow: "save_payment_method"
+      }
     }
   });
 
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ destination: "checkout", url: session.url });
 }

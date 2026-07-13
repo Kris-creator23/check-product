@@ -35,6 +35,8 @@ export default function DashboardPage() {
   const [savingCompany, setSavingCompany] = useState(false);
   const [editingCompany, setEditingCompany] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
+  const [managingPaymentMethod, setManagingPaymentMethod] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const checkoutStarted = useRef(false);
 
   function saveCompanyDraft(values = { companyName, businessId, vatId }) {
@@ -45,8 +47,8 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     const urlPlan = params.get("plan");
     if (urlPlan === "basic" || urlPlan === "pro" || urlPlan === "premium") setPlan(urlPlan);
-    if (params.get("payment_method") === "saved") {
-      setMessage("Maksutapa tallennettu Stripeen.");
+    if (params.get("payment_method") === "processing") {
+      setMessage("Maksutapaa vahvistetaan. Tiedot päivittyvät automaattisesti.");
       params.delete("payment_method");
       const cleanQuery = params.toString();
       window.history.replaceState({}, "", `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
@@ -188,6 +190,47 @@ export default function DashboardPage() {
     window.location.href = data.url;
   }
 
+  async function managePaymentMethod() {
+    if (managingPaymentMethod) return;
+    const sessionToken = await token();
+    if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
+
+    setManagingPaymentMethod(true);
+    setMessage("");
+    const response = await fetch("/api/payment-method", {
+      method: "POST",
+      headers: { authorization: `Bearer ${sessionToken}` },
+      cache: "no-store"
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.url) {
+      setManagingPaymentMethod(false);
+      return setMessage(data?.error ?? "Stripe-maksutavan avaaminen epäonnistui.");
+    }
+    window.location.assign(data.url);
+  }
+
+  async function downloadApp() {
+    if (downloading || !hasPaymentMethod) return;
+    const sessionToken = await token();
+    if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
+
+    setDownloading(true);
+    setMessage("");
+    const response = await fetch("/api/download", {
+      method: "POST",
+      headers: { authorization: `Bearer ${sessionToken}` },
+      cache: "no-store"
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.url) {
+      setDownloading(false);
+      setHasPaymentMethod(false);
+      return setMessage(data?.error ?? "Latauksen avaaminen epäonnistui.");
+    }
+    window.location.assign(data.url);
+  }
+
   const hasCurrentSubscription = Boolean(profile?.stripe_subscription_id && profile?.subscription_status && !["canceled", "incomplete_expired"].includes(profile.subscription_status));
   const trialAlreadyUsed = Boolean(profile?.trial_started_at);
   const receiptQuota = plans[profile?.selected_plan ?? plan].quota;
@@ -291,9 +334,9 @@ export default function DashboardPage() {
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
                 <div className="accountActionCell">
                   <b>Maksutapa</b>
-                  <a className="button secondary compactButton" href="/payment-method">
-                    Hallinnoi maksutapaa
-                  </a>
+                  <button className="button secondary compactButton" onClick={managePaymentMethod} disabled={managingPaymentMethod}>
+                    {managingPaymentMethod ? "Avataan Stripe..." : "Hallinnoi maksutapaa"}
+                  </button>
                 </div>
               </div>
               <div className="actions accountEditActions">
@@ -307,7 +350,9 @@ export default function DashboardPage() {
                   </button>
                 )}
                 {hasPaymentMethod ? (
-                  <a className="button secondary" href="/api/download">Lataa CheckApp Macille</a>
+                  <button className="button secondary" onClick={downloadApp} disabled={downloading}>
+                    {downloading ? "Avataan lataus..." : "Lataa CheckApp Macille"}
+                  </button>
                 ) : (
                   <button className="button secondary" disabled title="Lisää ja tallenna maksutapa ensin Stripessä.">
                     Lataa CheckApp Macille

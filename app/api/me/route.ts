@@ -37,9 +37,33 @@ export async function GET(request: Request) {
           limit: 1
         });
         hasPaymentMethod = paymentMethods.data.length > 0;
+        const paymentMethod = paymentMethods.data[0] ?? null;
+        const { data: syncedProfile, error: paymentStateError } = await auth.supabase
+          .from("profiles")
+          .update({
+            payment_method_ready: hasPaymentMethod,
+            stripe_payment_method_id: paymentMethod?.id ?? null,
+            ...(paymentMethod && !profile.payment_method_added_at
+              ? { payment_method_added_at: new Date().toISOString() }
+              : {})
+          })
+          .eq("user_id", auth.user.id)
+          .select("*")
+          .single();
+        if (paymentStateError) throw paymentStateError;
+        profile = syncedProfile;
       } catch (paymentMethodError) {
         console.error("Stripe payment method lookup failed", paymentMethodError);
       }
+    }
+    if (!profile?.stripe_customer_id && profile?.payment_method_ready) {
+      const { data: syncedProfile } = await auth.supabase
+        .from("profiles")
+        .update({ payment_method_ready: false, stripe_payment_method_id: null })
+        .eq("user_id", auth.user.id)
+        .select("*")
+        .single();
+      if (syncedProfile) profile = syncedProfile;
     }
   }
 
