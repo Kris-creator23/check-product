@@ -10,6 +10,7 @@ type Profile = {
   selected_plan: PlanId | null;
   company_name: string | null;
   business_id: string | null;
+  business_id_normalized: string | null;
   vat_id: string | null;
   trial_started_at: string | null;
   trial_ends_at: string | null;
@@ -18,6 +19,7 @@ type Profile = {
   receipts_used: number | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  payment_method_ready: boolean | null;
 };
 
 export default function DashboardPage() {
@@ -28,6 +30,7 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [businessId, setBusinessId] = useState("");
+  const [businessIdNormalized, setBusinessIdNormalized] = useState("");
   const [vatId, setVatId] = useState("");
   const [invoiceEmail, setInvoiceEmail] = useState("");
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function DashboardPage() {
   const [managingPaymentMethod, setManagingPaymentMethod] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const checkoutStarted = useRef(false);
+  const profileLoadRetries = useRef(0);
 
   function saveCompanyDraft(values = { companyName, businessId, vatId }) {
     window.localStorage.setItem("checkappCompanyDraft", JSON.stringify(values));
@@ -110,18 +114,24 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
-    setProfile(data.profile ?? null);
+
+    const loadedProfile = data.profile ?? null;
+    setProfile(loadedProfile);
     setHasPaymentMethod(Boolean(data.hasPaymentMethod));
     setUserEmail(data.user?.email ?? "");
-    if (data.profile?.selected_plan) setPlan(data.profile.selected_plan);
+    if (loadedProfile?.selected_plan) setPlan(loadedProfile.selected_plan);
+    
     const metadata = data.user?.metadata ?? {};
-    const storedCompanyName = data.profile?.company_name ?? metadata.company_name;
-    const storedBusinessId = data.profile?.business_id ?? metadata.business_id;
-    const storedVatId = data.profile?.vat_id ?? metadata.vat_id;
-    if (storedCompanyName) setCompanyName(storedCompanyName);
-    if (storedBusinessId) setBusinessId(storedBusinessId);
-    if (storedVatId) setVatId(storedVatId);
-    setEditingCompany(!data.profile?.company_name || !data.profile?.business_id);
+    const storedCompanyName = loadedProfile?.company_name ?? metadata.company_name ?? "";
+    const storedBusinessId = loadedProfile?.business_id ?? metadata.business_id ?? "";
+    const storedBusinessIdNormalized = loadedProfile?.business_id_normalized ?? metadata.business_id_normalized ?? "";
+    const storedVatId = loadedProfile?.vat_id ?? metadata.vat_id ?? "";
+    
+    setCompanyName(storedCompanyName);
+    setBusinessId(storedBusinessId);
+    setBusinessIdNormalized(storedBusinessIdNormalized);
+    setVatId(storedVatId);
+    setEditingCompany(!loadedProfile?.company_name || !loadedProfile?.business_id);
     setLoading(false);
   }
 
@@ -159,17 +169,23 @@ export default function DashboardPage() {
     const data = await response.json();
     setSavingCompany(false);
     if (!response.ok) return setMessage(data.error ?? "Yritystietojen tallennus epäonnistui.");
-    const savedCompanyName = data.profile?.company_name ?? "";
-    const savedBusinessId = data.profile?.business_id ?? "";
-    const savedVatId = data.profile?.vat_id ?? "";
+    
+    const savedProfile = data.profile ?? null;
+    const savedCompanyName = savedProfile?.company_name ?? "";
+    const savedBusinessId = savedProfile?.business_id ?? "";
+    const savedBusinessIdNormalized = savedProfile?.business_id_normalized ?? "";
+    const savedVatId = savedProfile?.vat_id ?? "";
+    
     if (savedCompanyName !== company.companyName || savedBusinessId !== company.businessId) {
       setMessage("Yritystietojen tallennusta ei voitu vahvistaa. Yritä uudelleen.");
       return;
     }
-    setProfile(data.profile);
+    
+    setProfile(savedProfile);
     setUserEmail(data.email ?? userEmail);
     setCompanyName(savedCompanyName);
     setBusinessId(savedBusinessId);
+    setBusinessIdNormalized(savedBusinessIdNormalized);
     setVatId(savedVatId);
     setEditingCompany(false);
     saveCompanyDraft({ companyName: savedCompanyName, businessId: savedBusinessId, vatId: savedVatId });
@@ -215,7 +231,7 @@ export default function DashboardPage() {
   }
 
   async function downloadApp() {
-    if (downloading || !hasPaymentMethod) return;
+    if (downloading) return;
     const sessionToken = await token();
     if (!sessionToken) return setMessage("Kirjaudu ensin sisään.");
 
@@ -229,7 +245,6 @@ export default function DashboardPage() {
     const data = await response.json().catch(() => null);
     if (!response.ok || !data?.url) {
       setDownloading(false);
-      setHasPaymentMethod(false);
       return setMessage(data?.error ?? "Latauksen avaaminen epäonnistui.");
     }
     window.location.assign(data.url);
@@ -353,17 +368,17 @@ export default function DashboardPage() {
                     Muokkaa tiedot
                   </button>
                 )}
-                {hasPaymentMethod ? (
+                {hasCurrentSubscription || (profile?.subscription_status === "trialing") ? (
                   <button className="button secondary" onClick={downloadApp} disabled={downloading}>
                     {downloading ? "Avataan lataus..." : "Lataa CheckApp Macille"}
                   </button>
                 ) : (
-                  <button className="button secondary" disabled title="Lisää ja tallenna maksutapa ensin Stripessä.">
+                  <button className="button secondary" disabled title="Aloita tilaus ensin. Maksuton 7 päivän kokeilu tai suora maksu.">
                     Lataa CheckApp Macille
                   </button>
                 )}
               </div>
-              {!hasPaymentMethod && <p className="helperText">CheckAppin lataus aktivoituu, kun maksutapa on lisätty ja tallennettu Stripessä.</p>}
+              {!(hasCurrentSubscription || profile?.subscription_status === "trialing") && <p className="helperText">CheckAppin lataus aktivoituu, kun tilaus on aktiivinen tai kokeilu on voimassa.</p>}
               <label>
                 Valitse paketti
                 <select value={plan} onChange={(event) => setPlan(event.target.value as PlanId)}>

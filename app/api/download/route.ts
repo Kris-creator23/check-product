@@ -8,21 +8,26 @@ export async function POST(request: Request) {
 
   const { data: profile, error: profileError } = await auth.supabase
     .from("profiles")
-    .select("stripe_customer_id")
+    .select("stripe_subscription_id, subscription_status, trial_ends_at, trial_started_at")
     .eq("user_id", auth.user.id)
     .maybeSingle();
+
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
-  if (!profile?.stripe_customer_id) {
-    return NextResponse.json({ error: "Lisää ja tallenna maksutapa ensin." }, { status: 403 });
+  if (!profile) {
+    return NextResponse.json({ error: "Profiili puuttuu. Tallenna ensin yritystiedot." }, { status: 403 });
   }
 
-  const cards = await getStripe().paymentMethods.list({
-    customer: profile.stripe_customer_id,
-    type: "card",
-    limit: 1
-  });
-  if (cards.data.length === 0) {
-    return NextResponse.json({ error: "Lisää ja tallenna maksutapa ensin." }, { status: 403 });
+  // Check if user has active subscription or valid trial
+  const now = new Date();
+  const hasActiveSubscription = profile.subscription_status === "active";
+  const hasTrialActive = profile.subscription_status === "trialing" && 
+    profile.trial_ends_at && 
+    new Date(profile.trial_ends_at) > now;
+
+  if (!hasActiveSubscription && !hasTrialActive) {
+    return NextResponse.json({ 
+      error: "Tilaus on passiivinen tai kokeilu on päättynyt. Aloita uusi tilaus." 
+    }, { status: 403 });
   }
 
   const url = process.env.NEXT_PUBLIC_MAC_DOWNLOAD_URL;
