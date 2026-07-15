@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../lib/auth";
 import { plans, type PlanId } from "../../../lib/plans";
-import { syncStripeSubscriptionProfile } from "../../../lib/subscription";
+import { recoverStripeProfile, syncStripeSubscriptionProfile } from "../../../lib/subscription";
 
 export async function GET(request: Request) {
   const auth = await requireUser(request);
@@ -17,11 +17,18 @@ export async function GET(request: Request) {
   if (!storedProfile) return NextResponse.json({ active: false, reason: "no_profile" });
 
   let profile = storedProfile;
-  if (profile.stripe_subscription_id) {
-    try {
+  try {
+    if (profile.stripe_subscription_id) {
       profile = await syncStripeSubscriptionProfile(auth.supabase, profile);
-    } catch (syncError) {
-      console.error("Stripe license sync failed", syncError);
+    } else {
+      profile = await recoverStripeProfile(auth.supabase, profile, auth.user.email);
+    }
+  } catch (syncError) {
+    console.error("Stripe license sync failed", syncError);
+    try {
+      profile = await recoverStripeProfile(auth.supabase, profile, auth.user.email);
+    } catch (recoveryError) {
+      console.error("Stripe license recovery failed", recoveryError);
     }
   }
 

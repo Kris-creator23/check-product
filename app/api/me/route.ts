@@ -27,6 +27,11 @@ export async function GET(request: Request) {
         : await recoverStripeProfile(auth.supabase, profile, auth.user.email);
     } catch (syncError) {
       console.error("Stripe profile sync failed", syncError);
+      try {
+        profile = await recoverStripeProfile(auth.supabase, profile, auth.user.email);
+      } catch (recoveryError) {
+        console.error("Stripe profile recovery failed", recoveryError);
+      }
     }
 
     if (profile?.stripe_customer_id) {

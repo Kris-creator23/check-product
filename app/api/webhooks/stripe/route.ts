@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getStripe } from "../../../lib/stripe";
-import { createServiceRoleClient } from "../../../lib/supabase-admin";
+import { getStripe } from "../../../../lib/stripe";
+import { createServiceRoleClient } from "../../../../lib/supabase-admin";
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
