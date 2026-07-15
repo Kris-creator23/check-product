@@ -16,7 +16,7 @@ ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
 
 def wait_for_user_receipt_confirmation():
     script = '''
-set dialogResult to display dialog "Tarkista tallennetut tiedot ennen jatkamista" buttons {"OK"} default button "OK" with title "CheckApp"
+set dialogResult to display dialog "Tarkista ja tallenna kuitti Fennoassa. Kun kuitti on tallennettu, jatka seuraavaan kuittiin" buttons {"OK"} default button "OK" with title "CheckApp" with icon note
 button returned of dialogResult
 '''
 
@@ -29,9 +29,9 @@ button returned of dialogResult
         )
         return result.stdout.strip() == "OK"
     except subprocess.CalledProcessError:
-        return False
+        return True
     except FileNotFoundError:
-        input("Tarkista tallennetut tiedot ennen jatkamista. Paina sitten ENTER...")
+        input("Tarkista ja tallenna kuitti Fennoassa. Jatka painamalla ENTER...")
         return True
 
 
@@ -159,7 +159,7 @@ def wait_with_floating_start_button(
 def wait_for_manual_receipt_completion(page):
     wait_with_floating_start_button(
         page,
-        button_text="Tiedot tarkistettu – jatka",
+        button_text="Jatka seuraavaan kuittiin",
         console_text=(
             "CheckApp on tauolla. Tarkista ja tallenna nykyinen kuitti Fennoassa. "
             "Kun kaikki tiedot ovat oikein, jatka vihreästä painikkeesta."
@@ -185,7 +185,7 @@ def normalize_finnish_date(value):
     iso_match = re.fullmatch(r"\s*(\d{4})-(\d{1,2})-(\d{1,2})\s*", str(value))
     if iso_match:
         year, month, day = iso_match.groups()
-        return f"{int(day):02d}.{int(month):02d}.{year}"
+        return f"{int(day)}.{int(month)}.{year}"
 
     match = re.search(r"(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})", str(value))
     if not match:
@@ -195,7 +195,7 @@ def normalize_finnish_date(value):
     if len(year) == 2:
         year = f"20{year}"
 
-    return f"{int(day):02d}.{int(month):02d}.{year}"
+    return f"{int(day)}.{int(month)}.{year}"
 
 
 def looks_like_date(value):
@@ -516,45 +516,117 @@ def _fill_date_field(candidates, date_value):
                     continue
 
                 input_type = (field.get_attribute("type") or "").lower()
-                value = date_value
-                if input_type == "date":
+                value = date_value or ""
+                if input_type == "date" and date_value:
                     day, month, year = date_value.split(".")
-                    value = f"{year}-{month}-{day}"
+                    value = f"{year}-{int(month):02d}-{int(day):02d}"
 
                 field.click()
                 field.fill(value)
+                field.press("Enter")
                 field.press("Tab")
+                time.sleep(0.35)
                 stored_value = field.input_value()
-                if normalize_finnish_date(stored_value) == normalize_finnish_date(date_value):
+                if date_value and normalize_finnish_date(stored_value) == normalize_finnish_date(date_value):
+                    return True
+                if not date_value and not stored_value.strip():
+                    return True
+
+                # Some Fennoa datepickers update their internal model only
+                # after keyboard selection is explicitly confirmed.
+                field.click()
+                field.press("ControlOrMeta+A")
+                field.type(value, delay=35)
+                field.press("Enter")
+                field.press("Tab")
+                time.sleep(0.35)
+                stored_value = field.input_value()
+                if date_value and normalize_finnish_date(stored_value) == normalize_finnish_date(date_value):
+                    return True
+                if not date_value and not stored_value.strip():
                     return True
         except Exception:
             continue
     return False
 
 
-def set_dates(page, purchase_date):
-    if not purchase_date:
-        print("⚠️ Kuitin päivämäärää ei tunnistettu. Tarkista Ostopäivä ja Tositepäivä käsin.")
-        return False
+def _fill_date_field_without_calendar(candidates, date_value):
+    """Commit a date by blurring the input without selecting from its popup."""
+    for candidate in candidates:
+        try:
+            locator = candidate()
+            count = min(locator.count(), 4)
+            for index in range(count):
+                field = locator.nth(index)
+                if not field.is_visible() or not field.is_enabled():
+                    continue
 
-    purchase_date_set = _fill_date_field(
-        [
-            lambda: page.get_by_label("Ostopäivä", exact=True),
-            lambda: page.locator("#PurchaseInvoicePurchaseDate"),
-            lambda: page.locator('input[name*="PurchaseDate"]'),
-            lambda: page.locator('input[id*="PurchaseDate"]'),
-        ],
-        purchase_date,
-    )
-    receipt_date_set = _fill_date_field(
-        [
-            lambda: page.get_by_label("Tositepäivä", exact=True),
-            lambda: page.locator("#PurchaseInvoiceReceiptDate"),
-            lambda: page.locator("#PurchaseInvoiceDate"),
-            lambda: page.locator('input[name*="ReceiptDate"]'),
-            lambda: page.locator('input[id*="ReceiptDate"]'),
-        ],
-        purchase_date,
+                input_type = (field.get_attribute("type") or "").lower()
+                value = date_value or ""
+                if input_type == "date" and date_value:
+                    day, month, year = date_value.split(".")
+                    value = f"{year}-{int(month):02d}-{int(day):02d}"
+
+                field.click()
+                field.press("ControlOrMeta+A")
+                field.type(value, delay=35)
+                # Enter can select Fennoa's preselected current day. Blurring
+                # commits the typed value without touching the other date.
+                field.press("Tab")
+                time.sleep(0.7)
+                stored_value = field.input_value()
+                if date_value and normalize_finnish_date(stored_value) == normalize_finnish_date(date_value):
+                    return True
+                if not date_value and not stored_value.strip():
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+def set_dates(page, purchase_date, voucher_date=None):
+    voucher_date = voucher_date or purchase_date
+
+    purchase_candidates = [
+        lambda: page.get_by_label("Ostopäivä", exact=True),
+        lambda: page.locator("#PurchaseInvoicePurchaseDate"),
+        lambda: page.locator('input[name*="PurchaseDate"]'),
+        lambda: page.locator('input[id*="PurchaseDate"]'),
+    ]
+    receipt_candidates = [
+        lambda: page.get_by_label("Tositepäivä", exact=True),
+        lambda: page.get_by_label("Päiväys", exact=True),
+        lambda: page.locator(
+            'xpath=//*[normalize-space()="Tositepäivä" or normalize-space()="Päiväys"]'
+            '/following::input[not(@type="hidden")][1]'
+        ),
+        lambda: page.locator("#PurchaseInvoiceReceiptDate"),
+        lambda: page.locator("#PurchaseInvoiceDate"),
+        lambda: page.locator("#PurchaseInvoiceInvoiceDate"),
+        lambda: page.locator("#PurchaseInvoiceEntryDate"),
+        lambda: page.locator("#PurchaseInvoiceVoucherDate"),
+        lambda: page.locator("#PurchaseInvoiceDocumentDate"),
+        lambda: page.locator('input[name*="ReceiptDate"]'),
+        lambda: page.locator('input[name*="InvoiceDate"]'),
+        lambda: page.locator('input[name*="EntryDate"]'),
+        lambda: page.locator('input[name*="VoucherDate"]'),
+        lambda: page.locator('input[name*="DocumentDate"]'),
+        lambda: page.locator('input[id*="ReceiptDate"]'),
+        lambda: page.locator('input[id*="InvoiceDate"]'),
+        lambda: page.locator('input[id*="EntryDate"]'),
+        lambda: page.locator('input[id*="VoucherDate"]'),
+        lambda: page.locator('input[id*="DocumentDate"]'),
+    ]
+
+    # Fennoa links these datepickers. Confirm both through their widgets first.
+    purchase_date_set = _fill_date_field(purchase_candidates, purchase_date or "")
+    receipt_date_set = _fill_date_field(receipt_candidates, voucher_date or "")
+
+    # Choosing Tositepäivä can reset Ostopäivä to Fennoa's default (today).
+    # Restore Ostopäivä without Enter so the open calendar does not select today
+    # and Tositepäivä remains intact.
+    purchase_date_set = _fill_date_field_without_calendar(
+        purchase_candidates, purchase_date or ""
     )
 
     if not purchase_date_set:
@@ -742,12 +814,14 @@ def upload_all_receipts(page, receipts_dir=None):
             ).fill(description)
 
             # Dates
-            purchase_date = (
-                normalize_finnish_date(data.get("receipt_date"))
-                or normalize_finnish_date(data.get("invoice_date"))
-                or normalize_finnish_date(data.get("entry_date"))
-            )
-            set_dates(page, purchase_date)
+            receipt_date = normalize_finnish_date(data.get("receipt_date"))
+            invoice_date = normalize_finnish_date(data.get("invoice_date"))
+            entry_date = normalize_finnish_date(data.get("entry_date"))
+            purchase_date = receipt_date or invoice_date or entry_date
+            voucher_date = invoice_date or receipt_date or entry_date
+            set_dates(page, purchase_date, voucher_date)
+            if not purchase_date:
+                print("⚠️ Kuitin päivämäärää ei tunnistettu. Päivämääräkentät tyhjennettiin manuaalista tarkistusta varten.")
 
             # Totals
             if data.get("total_net"):
