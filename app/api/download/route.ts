@@ -30,10 +30,7 @@ export async function POST(request: Request) {
     }, { status: 403 });
   }
 
-  const url = process.env.NEXT_PUBLIC_MAC_DOWNLOAD_URL;
-  if (!url) {
-    return NextResponse.json({ error: "Download URL is not configured." }, { status: 500 });
-  }
+  const url = "https://github.com/Kris-creator23/check-product/releases/download/checkapp-mac-v0.1.7/CheckApp-0.1.7.dmg";
 
   return NextResponse.json({ url });
 }
