@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BrandLogo } from "./components/BrandLogo";
 import { cleanCompanyInput, isValidFinnishBusinessId } from "../lib/company";
 import { createBrowserSupabase } from "../lib/supabase";
@@ -25,6 +25,25 @@ export default function HomePage() {
   const canSubmit = passwordMode === "signin"
     ? Boolean(email && password)
     : Boolean(email && password && company.companyName && company.businessId && b2bAccepted);
+
+  useEffect(() => {
+    let active = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active && data.session) window.location.replace("/dashboard");
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active && session && passwordMode === "signin") {
+        window.location.replace(`/dashboard?plan=${plan}`);
+      }
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [passwordMode, plan, supabase]);
 
   function validateCompany() {
     if (!company.companyName || !company.businessId) {
@@ -78,12 +97,27 @@ export default function HomePage() {
     setMessage("");
 
     if (passwordMode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
-      setMessage(error ? error.message : "Kirjautuminen onnistui. Siirrytään omalle tilille.");
-      if (!error) window.location.href = `/dashboard?plan=${plan}`;
+      if (error) {
+        setMessage(error.message);
+      } else if (!data.session) {
+        setMessage("Kirjautuminen onnistui, mutta istuntoa ei voitu tallentaa. Yritä uudelleen.");
+      } else {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        });
+        if (sessionError) {
+          setMessage(sessionError.message);
+        } else {
+          setMessage("Kirjautuminen onnistui. Siirrytään omalle tilille.");
+          window.location.replace(`/dashboard?plan=${plan}`);
+          return;
+        }
+      }
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
