@@ -351,11 +351,22 @@ export default function DashboardPage() {
                   <small>Jäljellä {receiptsRemaining} kuittia</small>
                 </div>
                 <div><b>Trial voimassa asti</b><span>{trialEndLabel}</span></div>
-                <div className="accountActionCell">
+                <div className="accountActionCell paymentSetupCell">
                   <b>Maksutapa</b>
                   <button className="button secondary compactButton" onClick={managePaymentMethod} disabled={managingPaymentMethod || !profile?.company_name || !profile?.business_id}>
                     {managingPaymentMethod ? "Avataan Stripe..." : "Hallinnoi maksutapaa"}
                   </button>
+                  {!hasCurrentSubscription && (
+                    <button className="button primary compactButton" onClick={checkout} disabled={!companyName || !businessId}>
+                      {trialAlreadyUsed ? "Jatka maksulliseen tilaukseen" : "Aloita 7 päivän kokeilu"}
+                    </button>
+                  )}
+                  {!hasCurrentSubscription && (
+                    <small className="paymentSetupHint">
+                      Lisää ensin maksutapa ja käynnistä sen jälkeen kokeilu erillisellä painikkeella.
+                      Pelkkä maksutavan tallentaminen ei aloita kokeilua.
+                    </small>
+                  )}
                 </div>
               </div>
               <div className="actions accountEditActions">
@@ -400,13 +411,6 @@ export default function DashboardPage() {
                 Mac voi ensimmäisellä avauskerralla varoittaa, koska CheckApp ladataan verkkosivulta eikä App Storesta.
                 Avaa sovellus tarvittaessa Finderissa: ctrl-klikkaa CheckAppia, valitse Avaa ja vahvista Avaa.
               </p>
-              <div className="actions">
-                {!hasCurrentSubscription && (
-                  <button className="button primary" onClick={checkout} disabled={!companyName || !businessId}>
-                    {trialAlreadyUsed ? "Jatka maksulliseen tilaukseen" : "Aloita 7 päivän kokeilu"}
-                  </button>
-                )}
-              </div>
               <div className="invoiceBox">
                 <h2>Yrityslasku</h2>
                 <p>Jos haluat maksaa laskulla, lähetä laskutuspyyntö. Kokeilu voi alkaa heti, ja laskutus sovitaan erikseen.</p>

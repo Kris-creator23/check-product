@@ -786,6 +786,15 @@ select {
   align-content: start;
 }
 
+.accountGrid .paymentSetupCell {
+  grid-column: span 2;
+  gap: 9px;
+}
+
+.paymentSetupHint {
+  padding-top: 2px;
+}
+
 .compactButton {
   width: 100%;
   min-height: 40px;
@@ -847,6 +856,10 @@ select {
 
   .heroVisual {
     width: 100%;
+  }
+
+  .accountGrid .paymentSetupCell {
+    grid-column: span 1;
   }
 }
 
