@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }, { status: 403 });
   }
 
-  const url = "https://github.com/Kris-creator23/check-product/releases/download/checkapp-mac-v0.1.7/CheckApp-0.1.7.dmg";
+  const url = "https://github.com/Kris-creator23/check-product/releases/download/checkapp-mac-v0.1.8/CheckApp-0.1.8.dmg";
 
   return NextResponse.json({ url });
 }
